@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>起居注 — 墨香 设计样板</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   墨香 — RoyalNote 起居注 设计系统
+   古朴 · 低调奢华 · 宣纸质感
+   ============================================ */
+
+:root {
+  /* — 纸墨基调 — */
+  --paper-bg:        #F2EDE3;
+  --paper-surface:   #EAE4D6;
+  --paper-highlight: #F9F6EF;
+  --paper-border:    #D6CDBB;
+
+  /* — 墨色文字 — */
+  --ink-primary:     #2A2015;
+  --ink-secondary:   #746658;
+  --ink-muted:       #9B8F80;
+
+  /* — 点睛之色 — */
+  --accent-bronze:   #7A5C3E;
+  --accent-gold:     #937A46;
+  --accent-vermilion:#9B4A3A;
+  --accent-celadon:  #55806A;
+  --accent-faint:    #C8BFA8;
+
+  /* — 心情七色 (古雅版) — */
+  --mood-joy:    #B6624A;
+  --mood-satisfy:#927530;
+  --mood-calm:   #4B7662;
+  --mood-tired:  #6B7080;
+  --mood-irrit:  #8A5340;
+  --mood-low:    #425663;
+  --mood-anx:    #6B4A5A;
+
+  /* — 间距节奏 — */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* — 字形 — */
+  --font-display: 'Noto Serif SC', 'Source Han Serif SC', 'SimSun', 'STSong', serif;
+  --font-body:    'Noto Sans SC',  'Source Han Sans SC',  'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* — 纸纹 — */
+  --noise-opacity: 0.03;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #D9D0C1;
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(122, 92, 62, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse at 80% 100%, rgba(155, 74, 58, 0.06) 0%, transparent 60%);
+  font-family: var(--font-body);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 40px 20px;
+  -webkit-font-smoothing: antialiased;
+  color: var(--ink-primary);
+}
+
+/* ——— 手机框 ——— */
+.phone-wrapper {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: 1100px;
+}
+
+.phone-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.col-label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: #5C5040;
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+.phone-frame {
+  width: 390px;
+  height: 844px;
+  background: var(--paper-bg);
+  border-radius: 36px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 0 0 2px #C4B9A6,
+    0 0 0 6px #E8E2D3,
+    0 24px 80px rgba(42, 32, 21, 0.25);
+}
+
+/* 宣纸纹理叠加 */
+.phone-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: var(--noise-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.phone-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 20px 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.phone-content::-webkit-scrollbar { width: 0; }
+
+/* ——— 顶部区域 ——— */
+.app-header {
+  padding-top: 28px;
+  padding-bottom: 6px;
+}
+
+.app-title {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--ink-primary);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.app-subtitle {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--ink-secondary);
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* 装饰线 — 毛笔横划效果 */
+.brush-line {
+  height: 22px;
+  margin: 10px 0 18px;
+  position: relative;
+}
+
+.brush-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 48px;
+  height: 3px;
+  background: var(--accent-bronze);
+  border-radius: 2px;
+  transform: translateY(-50%);
+  opacity: 0.7;
+}
+
+.brush-line::after {
+  content: '';
+  position: absolute;
+  left: 51px;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  background: var(--accent-bronze);
+  border-radius: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5;
+}
+
+/* ——— 记录卡片 ——— */
+.record-card {
+  background: var(--paper-surface);
+  border-radius: 8px;
+  padding: 16px;
+  position: relative;
+  border: 1px solid var(--paper-border);
+  transition: all 0.2s ease;
+  margin-bottom: 12px;
+}
+
+/* 左侧装饰竖线 */
+.record-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 2.5px;
+  background: var(--accent-bronze);
+  border-radius: 0 2px 2px 0;
+  opacity: 0.5;
+}
+
+.record-card:last-child { margin-bottom: 0; }
+
+.record-time {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.record-text {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--ink-primary);
+  line-height: 1.7;
+  letter-spacing: 0.03em;
+  margin-bottom: 10px;
+}
+
+.record-mood-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mood-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+
+.mood-chip.joy     { background: var(--mood-joy); }
+.mood-chip.satisfy { background: var(--mood-satisfy); }
+.mood-chip.calm    { background: var(--mood-calm); }
+.mood-chip.tired   { background: var(--mood-tired); }
+.mood-chip.irrit   { background: var(--mood-irrit); }
+.mood-chip.low     { background: var(--mood-low); }
+.mood-chip.anx     { background: var(--mood-anx); }
+.mood-chip.none    {
+  background: transparent;
+  color: var(--ink-muted);
+  border: 1px solid var(--paper-border);
+}
+
+.mood-note {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-secondary);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.record-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--paper-border);
+}
+
+.record-actions a {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-secondary);
+  text-decoration: none;
+  padding: 4px 0;
+  cursor: pointer;
+  transition: color 0.15s;
+  letter-spacing: 0.04em;
+}
+
+.record-actions a:hover { color: var(--accent-bronze); }
+
+/* ——— 时间线分组头 ——— */
+.timeline-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+
+.timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-bronze);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.timeline-label {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  letter-spacing: 0.06em;
+}
+
+/* ——— 编辑器区域 ——— */
+.editor-card {
+  background: var(--paper-surface);
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid var(--paper-border);
+  position: relative;
+  margin-bottom: 16px;
+}
+
+/* 左侧金色标记条 */
+.editor-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  background: var(--accent-bronze);
+  border-radius: 0 2px 2px 0;
+}
+
+.editor-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  margin-bottom: 12px;
+  letter-spacing: 0.06em;
+}
+
+.editor-field {
+  margin-bottom: 12px;
+}
+
+.editor-label {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+}
+
+.editor-input {
+  width: 100%;
+  background: var(--paper-highlight);
+  border: 1px solid var(--paper-border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--ink-primary);
+  outline: none;
+  resize: none;
+  min-height: 56px;
+  line-height: 1.6;
+  letter-spacing: 0.03em;
+  transition: border-color 0.2s;
+}
+
+.editor-input:focus { border-color: var(--accent-bronze); }
+
+.editor-input::placeholder { color: var(--ink-muted); }
+
+.mood-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mood-btn {
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--paper-border);
+  background: var(--paper-highlight);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.04em;
+}
+
+.mood-btn:hover { border-color: var(--accent-bronze); color: var(--ink-primary); }
+.mood-btn.selected { border-color: transparent; color: #fff; }
+.mood-btn.selected.joy     { background: var(--mood-joy); border-color: var(--mood-joy); }
+.mood-btn.selected.satisfy { background: var(--mood-satisfy); border-color: var(--mood-satisfy); }
+.mood-btn.selected.calm    { background: var(--mood-calm); border-color: var(--mood-calm); }
+.mood-btn.selected.tired   { background: var(--mood-tired); border-color: var(--mood-tired); }
+.mood-btn.selected.irrit   { background: var(--mood-irrit); border-color: var(--mood-irrit); }
+.mood-btn.selected.low     { background: var(--mood-low); border-color: var(--mood-low); }
+.mood-btn.selected.anx     { background: var(--mood-anx); border-color: var(--mood-anx); }
+
+.editor-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn-primary {
+  padding: 8px 24px;
+  background: var(--accent-bronze);
+  color: #F9F6EF;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover { background: #6B4E2F; }
+
+.btn-secondary {
+  padding: 8px 24px;
+  background: transparent;
+  color: var(--ink-secondary);
+  border: 1px solid var(--paper-border);
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  transition: all 0.15s;
+}
+
+.btn-secondary:hover { border-color: var(--ink-muted); color: var(--ink-primary); }
+
+/* ——— 空状态 ——— */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.empty-line {
+  width: 40px;
+  height: 2.5px;
+  background: var(--accent-bronze);
+  margin: 0 auto 16px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ——— 右侧色板 & 信息栏 ——— */
+.info-panel {
+  width: 320px;
+  background: #F9F6EF;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 24px rgba(42, 32, 21, 0.10);
+  border: 1px solid #D6CDBB;
+}
+
+.info-panel h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.info-panel .subtitle {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-secondary);
+  margin-bottom: 24px;
+  letter-spacing: 0.05em;
+}
+
+.swatch-section {
+  margin-bottom: 22px;
+}
+
+.swatch-section h3 {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  margin-bottom: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.swatch-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,0,0,0.06);
+  position: relative;
+  cursor: default;
+}
+
+.swatch::after {
+  content: attr(data-label);
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  margin-top: 4px;
+  font-family: var(--font-body);
+  letter-spacing: 0.02em;
+}
+
+.swatch-row.labeled { margin-bottom: 20px; }
+
+.color-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.color-bar .dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.color-bar .name {
+  font-size: 12px;
+  font-family: var(--font-body);
+  color: var(--ink-secondary);
+  flex: 1;
+}
+
+.color-bar .hex {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--ink-muted);
+}
+
+.typography-preview {
+  margin-top: 4px;
+}
+
+.type-sample {
+  margin-bottom: 14px;
+}
+
+.type-sample .label {
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--ink-muted);
+  margin-bottom: 2px;
+}
+
+.type-sample.display {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 900;
+  color: var(--ink-primary);
+  letter-spacing: 0.08em;
+}
+
+.type-sample.heading {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  letter-spacing: 0.06em;
+}
+
+.type-sample.body-text {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+
+.note-box {
+  background: var(--paper-surface);
+  padding: 14px;
+  border-radius: 8px;
+  margin-top: 16px;
+  border: 1px solid var(--paper-border);
+}
+
+.note-box h4 {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-bronze);
+  margin-bottom: 8px;
+  letter-spacing: 0.06em;
+}
+
+.note-box ul {
+  list-style: none;
+  padding: 0;
+}
+
+.note-box li {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--ink-secondary);
+  padding: 3px 0;
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.6;
+}
+
+.note-box li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 6px;
+  height: 1px;
+  background: var(--accent-bronze);
+  opacity: 0.5;
+}
+
+/* ——— 对比色条 ——— */
+.comparison-strip {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.comp-item {
+  flex: 1;
+  text-align: center;
+}
+
+.comp-item .badge {
+  font-size: 10px;
+  font-family: var(--font-body);
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+
+.comp-item .box {
+  height: 40px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.comp-item .val {
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--ink-muted);
+}
+
+.current .box { background: #B91C1C; }
+.proposed .box { background: #7A5C3E; }
+
+/* ——— 响应式 ——— */
+@media (max-width: 800px) {
+  .phone-wrapper { flex-direction: column; align-items: center; }
+  .info-panel { width: 100%; max-width: 390px; }
+}
+</style>
+</head>
+<body>
+
+<div class="phone-wrapper">
+
+  <!-- ========== 左侧: 手机预览 ========== -->
+  <div class="phone-col">
+    <div class="phone-frame">
+      <div class="phone-content">
+
+        <!-- 顶部标题 -->
+        <div class="app-header">
+          <div class="app-title">起居注</div>
+          <div class="app-subtitle">记下此刻做了什么，和当时的心情。</div>
+        </div>
+
+        <!-- 毛笔装饰线 -->
+        <div class="brush-line"></div>
+
+        <!-- ——— 编辑区域 ——— -->
+        <div class="editor-card">
+          <div class="editor-title">快速记录</div>
+
+          <div class="editor-field">
+            <div class="editor-label">做了什么</div>
+            <textarea class="editor-input" placeholder="提笔写下一笔…">整理书桌</textarea>
+          </div>
+
+          <div class="editor-field">
+            <div class="editor-label">心情</div>
+            <div class="mood-grid">
+              <button class="mood-btn" style="border-color:var(--ink-muted)">未输入</button>
+              <button class="mood-btn joy">开心</button>
+              <button class="mood-btn satisfy">满足</button>
+              <button class="mood-btn calm selected">平静</button>
+              <button class="mood-btn tired">疲惫</button>
+              <button class="mood-btn irrit">烦躁</button>
+              <button class="mood-btn low">低落</button>
+              <button class="mood-btn anx">焦虑</button>
+            </div>
+          </div>
+
+          <div class="editor-field">
+            <div class="editor-label">心情补充，可不填</div>
+            <textarea class="editor-input" placeholder="…" style="min-height:36px">心里安稳了一点</textarea>
+          </div>
+
+          <div class="editor-actions">
+            <button class="btn-primary">保存</button>
+          </div>
+        </div>
+
+        <!-- ——— 时间线 ——— -->
+
+        <!-- 今天 -->
+        <div class="timeline-header">
+          <span class="timeline-dot"></span>
+          <span class="timeline-label">今天</span>
+        </div>
+
+        <div class="record-card">
+          <div class="record-time">10:30</div>
+          <div class="record-text">读了半小时书，窗外有风声，很安静。</div>
+          <div class="record-mood-row">
+            <span class="mood-chip satisfy">满足</span>
+          </div>
+          <div class="record-actions">
+            <a>编辑</a>
+            <a>删除</a>
+          </div>
+        </div>
+
+        <div class="record-card">
+          <div class="record-time">08:15</div>
+          <div class="record-text">晨起磨墨，抄了一段《赤壁赋》。</div>
+          <div class="record-mood-row">
+            <span class="mood-chip calm">平静</span>
+          </div>
+          <div class="mood-note">笔墨顺手，心也静了。</div>
+          <div class="record-actions">
+            <a>编辑</a>
+            <a>删除</a>
+          </div>
+        </div>
+
+        <!-- 昨天 -->
+        <div class="timeline-header">
+          <span class="timeline-dot"></span>
+          <span class="timeline-label">昨天</span>
+        </div>
+
+        <div class="record-card">
+          <div class="record-time">21:45</div>
+          <div class="record-text">晚间散步，路过旧书店，买了一册《陶庵梦忆》。</div>
+          <div class="record-mood-row">
+            <span class="mood-chip joy">开心</span>
+            <span style="font-size:12px;color:var(--ink-muted)">淘到好书</span>
+          </div>
+          <div class="record-actions">
+            <a>编辑</a>
+            <a>删除</a>
+          </div>
+        </div>
+
+        <div style="height: 40px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 右侧: 设计说明 — 墨香 ========== -->
+  <div class="info-panel">
+    <h2>墨香</h2>
+    <div class="subtitle">RoyalNote 起居注 · 古朴低调奢华</div>
+
+    <!-- 宣纸基调 -->
+    <div class="swatch-section">
+      <h3>宣纸基调</h3>
+      <div class="color-bar">
+        <span class="dot" style="background:#F2EDE3"></span>
+        <span class="name">宣纸底</span>
+        <span class="hex">#F2EDE3</span>
+      </div>
+      <div class="color-bar">
+        <span class="dot" style="background:#EAE4D6"></span>
+        <span class="name">纸卡面</span>
+        <span class="hex">#EAE4D6</span>
+      </div>
+      <div class="color-bar">
+        <span class="dot" style="background:#D6CDBB"></span>
+        <span class="name">纸边线</span>
+        <span class="hex">#D6CDBB</span>
+      </div>
+    </div>
+
+    <!-- 墨色文字 -->
+    <div class="swatch-section">
+      <h3>墨色文字</h3>
+      <div class="color-bar">
+        <span class="dot" style="background:#2A2015"></span>
+        <span class="name">主文字</span>
+        <span class="hex">#2A2015</span>
+      </div>
+      <div class="color-bar">
+        <span class="dot" style="background:#746658"></span>
+        <span class="name">辅文字</span>
+        <span class="hex">#746658</span>
+      </div>
+      <div class="color-bar">
+        <span class="dot" style="background:#9B8F80"></span>
+        <span class="name">弱文字</span>
+        <span class="hex">#9B8F80</span>
+      </div>
+    </div>
+
+    <!-- 古雅点缀 -->
+    <div class="swatch-section">
+      <h3>古雅点缀</h3>
+      <div class="color-bar">
+        <span class="dot" style="background:#7A5C3E"></span>
+        <span class="name">铜色 (主色/按钮)</span>
+        <span class="hex">#7A5C3E</span>
+      </div>
+      <div class="color-bar">
+        <span class="dot" style="background:#937A46"></span>
+        <span class="name">古金 (装饰)</span>
+        <span class="hex">#937A46</span>
+      </div>
+      <div class="color-bar">
+        <span class="dot" style="background:#9B4A3A"></span>
+        <span class="name">朱砂 (强调)</span>
+        <span class="hex">#9B4A3A</span>
+      </div>
+    </div>
+
+    <!-- 心情七色 -->
+    <div class="swatch-section">
+      <h3>心情七色 (古雅版)</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;color:#fff;background:#B6624A;font-family:var(--font-body)">开心</span>
+        <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;color:#fff;background:#927530;font-family:var(--font-body)">满足</span>
+        <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;color:#fff;background:#4B7662;font-family:var(--font-body)">平静</span>
+        <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;color:#fff;background:#6B7080;font-family:var(--font-body)">疲惫</span>
+        <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;color:#fff;background:#8A5340;font-family:var(--font-body)">烦躁</span>
+        <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;color:#fff;background:#425663;font-family:var(--font-body)">低落</span>
+        <span style="display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;color:#fff;background:#6B4A5A;font-family:var(--font-body)">焦虑</span>
+      </div>
+    </div>
+
+    <!-- 字形 -->
+    <div class="swatch-section">
+      <h3>字形</h3>
+      <div class="typography-preview">
+        <div class="type-sample">
+          <div class="label">标题 / 正文 (Serif)</div>
+          <div class="display" style="font-size:24px">起居注 墨香</div>
+        </div>
+        <div class="type-sample">
+          <div class="label">界面 / 辅助 (Sans)</div>
+          <div class="body-text" style="font-size:13px">记下此刻做了什么，和当时的心情。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 与当前对比 -->
+    <div class="note-box">
+      <h4>与当前「墨韵书卷」对比</h4>
+      <ul>
+        <li>主色由<span style="color:#B91C1C">朱红 #B91C1C</span> → <span style="color:#7A5C3E">铜色 #7A5C3E</span>，更内敛</li>
+        <li>宣纸底色由 <span style="color:#746658">#FAF6EE</span> → <span style="color:#7A5C3E">#F2EDE3</span>，更温润发黄</li>
+        <li>心情色整体降饱和，更有古旧感</li>
+        <li>增加装饰性毛笔横线元素</li>
+        <li>卡片增加微弱纸纹肌理</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
