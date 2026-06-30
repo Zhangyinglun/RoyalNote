@@ -39,6 +39,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,14 +54,22 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.royalnote.data.MoodLabels
 import com.example.royalnote.data.NoteRecord
 import com.example.royalnote.data.NoteRepository
 import com.example.royalnote.data.RoyalNoteDatabase
+import com.example.royalnote.network.OpenRouterService
+import com.example.royalnote.ui.ImportScreen
+import com.example.royalnote.ui.ImportViewModel
+import com.example.royalnote.ui.ImportViewModelFactory
 import com.example.royalnote.ui.RecordTimelineUiState
 import com.example.royalnote.ui.RecordTimelineViewModel
 import com.example.royalnote.ui.RecordTimelineViewModelFactory
@@ -88,40 +97,80 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val database = remember { RoyalNoteDatabase.getInstance(context) }
                 val repository = remember { NoteRepository(database.noteRecordDao()) }
-                val viewModel: RecordTimelineViewModel = viewModel(
+                val parser = remember { OpenRouterService() }
+
+                val timelineViewModel: RecordTimelineViewModel = viewModel(
                     factory = RecordTimelineViewModelFactory(repository),
                 )
+                val importViewModel: ImportViewModel = viewModel(
+                    factory = ImportViewModelFactory(parser, repository),
+                )
+
                 LaunchedEffect(Unit) {
                     SeedData.seedIfEmpty(repository)
                 }
-                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                RoyalNoteApp(
-                    uiState = uiState,
-                    onEventTextChange = viewModel::updateEventText,
-                    onMoodSelected = viewModel::selectMood,
-                    onMoodNoteChange = viewModel::updateMoodNote,
-                    onSave = viewModel::save,
-                    onEdit = viewModel::startEditing,
-                    onCancelEdit = viewModel::cancelEditing,
-                    onDelete = viewModel::delete,
-                    onMessageShown = viewModel::clearMessage,
-                )
+
+                val navController = rememberNavController()
+                val uiState by timelineViewModel.uiState.collectAsStateWithLifecycle()
+                val importUiState by importViewModel.uiState.collectAsStateWithLifecycle()
+
+                NavHost(navController = navController, startDestination = "main") {
+                    composable("main") {
+                        RoyalNoteApp(
+                            uiState = uiState,
+                            onEventTextChange = timelineViewModel::updateEventText,
+                            onMoodSelected = timelineViewModel::selectMood,
+                            onMoodNoteChange = timelineViewModel::updateMoodNote,
+                            onEditEventTextChange = timelineViewModel::updateEditEventText,
+                            onEditMoodSelected = timelineViewModel::selectEditMood,
+                            onEditMoodNoteChange = timelineViewModel::updateEditMoodNote,
+                            onSave = timelineViewModel::save,
+                            onEdit = timelineViewModel::startEditing,
+                            onCancelEdit = timelineViewModel::cancelEditing,
+                            onDelete = timelineViewModel::delete,
+                            onMessageShown = timelineViewModel::clearMessage,
+                            onImportClick = { navController.navigate("import") },
+                        )
+                    }
+                    composable("import") {
+                        ImportScreen(
+                            uiState = importUiState,
+                            onTextChange = importViewModel::updateText,
+                            onImportClick = importViewModel::importRecords,
+                            onBack = {
+                                importViewModel.resetState()
+                                navController.popBackStack()
+                            },
+                            onMessageShown = importViewModel::clearMessage,
+                            onSuccessConfirmed = {
+                                importViewModel.dismissSuccessDialog()
+                                importViewModel.resetState()
+                                navController.popBackStack()
+                            },
+                        )
+                    }
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoyalNoteApp(
     uiState: RecordTimelineUiState,
     onEventTextChange: (String) -> Unit,
     onMoodSelected: (String?) -> Unit,
     onMoodNoteChange: (String) -> Unit,
+    onEditEventTextChange: (String) -> Unit,
+    onEditMoodSelected: (String?) -> Unit,
+    onEditMoodNoteChange: (String) -> Unit,
     onSave: () -> Unit,
     onEdit: (NoteRecord) -> Unit,
     onCancelEdit: () -> Unit,
     onDelete: (NoteRecord) -> Unit,
     onMessageShown: () -> Unit,
+    onImportClick: () -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(uiState.message) {
@@ -134,6 +183,16 @@ fun RoyalNoteApp(
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = { Text("起居注", fontFamily = FontFamily.Serif) },
+                actions = {
+                    TextButton(onClick = onImportClick) {
+                        Text("导入", fontFamily = FontFamily.Serif)
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         LazyColumn(
@@ -145,11 +204,6 @@ fun RoyalNoteApp(
         ) {
             item {
                 Spacer(Modifier.height(12.dp))
-                Text(
-                    "起居注",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
                 Text(
                     "录今日之事，存此刻之心。",
                     style = MaterialTheme.typography.bodyMedium,
@@ -197,7 +251,23 @@ fun RoyalNoteApp(
                 uiState.timelineDays.forEach { day ->
                     item { TimelineHeader(day.label) }
                     items(day.records, key = { it.id }) { record ->
-                        RecordCard(record = record, onEdit = onEdit, onDelete = onDelete)
+                        if (uiState.editingRecord?.id == record.id) {
+                            RecordEditor(
+                                eventText = uiState.editEventText,
+                                selectedMood = uiState.editSelectedMood,
+                                moodNote = uiState.editMoodNote,
+                                title = "修订此则",
+                                saveLabel = "改毕入录",
+                                showCancel = true,
+                                onEventTextChange = onEditEventTextChange,
+                                onMoodSelected = onEditMoodSelected,
+                                onMoodNoteChange = onEditMoodNoteChange,
+                                onSave = onSave,
+                                onCancelEdit = onCancelEdit,
+                            )
+                        } else {
+                            RecordCard(record = record, onEdit = onEdit, onDelete = onDelete)
+                        }
                     }
                 }
             }
@@ -472,11 +542,15 @@ private fun RoyalNotePreview() {
             onEventTextChange = {},
             onMoodSelected = {},
             onMoodNoteChange = {},
+            onEditEventTextChange = {},
+            onEditMoodSelected = {},
+            onEditMoodNoteChange = {},
             onSave = {},
             onEdit = {},
             onCancelEdit = {},
             onDelete = {},
             onMessageShown = {},
+            onImportClick = {},
         )
     }
 }

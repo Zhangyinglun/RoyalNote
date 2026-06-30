@@ -30,4 +30,8 @@ class NoteRepository(private val dao: NoteRecordDao) : RecordOperations {
     override suspend fun deleteRecord(record: NoteRecord) {
         dao.delete(record)
     }
+
+    override suspend fun importRecords(records: List<NoteRecord>) {
+        dao.insertAll(records)
+    }
 }

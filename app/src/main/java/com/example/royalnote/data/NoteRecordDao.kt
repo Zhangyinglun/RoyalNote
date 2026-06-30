@@ -15,6 +15,9 @@ interface NoteRecordDao {
     @Insert
     suspend fun insert(record: NoteRecord)
 
+    @Insert
+    suspend fun insertAll(records: List<NoteRecord>)
+
     @Update
     suspend fun update(record: NoteRecord)
 

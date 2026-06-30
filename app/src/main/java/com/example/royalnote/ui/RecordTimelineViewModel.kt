@@ -30,6 +30,8 @@ interface RecordOperations {
     suspend fun updateRecord(record: NoteRecord)
 
     suspend fun deleteRecord(record: NoteRecord)
+
+    suspend fun importRecords(records: List<NoteRecord>)
 }
 
 data class RecordTimelineUiState(

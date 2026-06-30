@@ -243,4 +243,9 @@ private class FakeRecordRepository : RecordOperations {
     override suspend fun deleteRecord(record: NoteRecord) {
         records.value = records.value.filterNot { it.id == record.id }
     }
+
+    override suspend fun importRecords(records: List<NoteRecord>) {
+        val withIds = records.map { it.copy(id = nextId++) }
+        this.records.value = this.records.value + withIds
+    }
 }
