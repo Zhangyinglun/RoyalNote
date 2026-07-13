@@ -3,6 +3,8 @@ package com.example.royalnote.network
 import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -31,11 +33,19 @@ class OpenRouterUsageService(
             .addHeader("Authorization", "Bearer ${apiKey.trim()}")
             .get()
             .build()
-        client.newCall(request).awaitResponse().use { response ->
-            if (response.code == 401) throw InvalidOpenRouterApiKeyException()
-            if (!response.isSuccessful) throw IOException("Usage API error: ${response.code}")
-            val decoded = json.decodeFromString(CurrentKeyResponse.serializer(), response.body.string())
-            MonthlyUsage(decoded.data.usageMonthly)
+        val call = client.newCall(request)
+        try {
+            call.awaitResponse().use { response ->
+                if (response.code == 401) throw InvalidOpenRouterApiKeyException()
+                if (!response.isSuccessful) throw IOException("Usage API error: ${response.code}")
+                runInterruptible(blockingDispatcher) {
+                    val decoded = json.decodeFromString(CurrentKeyResponse.serializer(), response.body.string())
+                    MonthlyUsage(decoded.data.usageMonthly)
+                }
+            }
+        } catch (error: CancellationException) {
+            call.cancel()
+            throw error
         }
     }
 }

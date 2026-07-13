@@ -5,6 +5,7 @@ import com.example.royalnote.settings.OpenRouterSettingsProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -59,26 +60,34 @@ class OpenRouterService(
             .post(body)
             .build()
 
-        client.newCall(request).awaitResponse().use { response ->
-            if (!response.isSuccessful) {
-                throw OpenRouterResponseException("OpenRouter response code ${response.code}")
+        val call = client.newCall(request)
+        try {
+            call.awaitResponse().use { response ->
+                if (!response.isSuccessful) {
+                    throw OpenRouterResponseException("OpenRouter response code ${response.code}")
+                }
+                try {
+                    runInterruptible(blockingDispatcher) {
+                        val responseBody = response.body.string()
+                        val apiResponse = json.decodeFromString(ChatCompletionResponse.serializer(), responseBody)
+                        val content = apiResponse.choices.firstOrNull()?.message?.content
+                            ?.takeIf(String::isNotBlank)
+                            ?: throw OpenRouterResponseException("OpenRouter response content is missing")
+                        json.decodeFromString(ParsedRecords.serializer(), content)
+                    }
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: IOException) {
+                    throw error
+                } catch (error: OpenRouterResponseException) {
+                    throw error
+                } catch (error: Exception) {
+                    throw OpenRouterResponseException("OpenRouter response is malformed", error)
+                }
             }
-            try {
-                val responseBody = response.body.string()
-                val apiResponse = json.decodeFromString(ChatCompletionResponse.serializer(), responseBody)
-                val content = apiResponse.choices.firstOrNull()?.message?.content
-                    ?.takeIf(String::isNotBlank)
-                    ?: throw OpenRouterResponseException("OpenRouter response content is missing")
-                json.decodeFromString(ParsedRecords.serializer(), content)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: IOException) {
-                throw error
-            } catch (error: OpenRouterResponseException) {
-                throw error
-            } catch (error: Exception) {
-                throw OpenRouterResponseException("OpenRouter response is malformed", error)
-            }
+        } catch (error: CancellationException) {
+            call.cancel()
+            throw error
         }
     }
 }
