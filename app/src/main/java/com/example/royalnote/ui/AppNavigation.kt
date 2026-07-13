@@ -1,5 +1,8 @@
 package com.example.royalnote.ui
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -9,7 +12,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavHostController
@@ -39,6 +41,7 @@ fun RoyalNoteNavigation(
     val topLevelRoutes = setOf(AppRoutes.HOME, AppRoutes.ANALYSIS, AppRoutes.SETTINGS)
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (route in topLevelRoutes) {
                 RoyalNoteBottomBar(route.orEmpty()) { target ->
@@ -54,7 +57,9 @@ fun RoyalNoteNavigation(
         NavHost(
             navController = navController,
             startDestination = AppRoutes.HOME,
-            modifier = Modifier.padding(padding),
+            modifier = Modifier
+                .padding(padding)
+                .consumeWindowInsets(padding),
         ) {
             composable(AppRoutes.HOME) {
                 homeContent { navController.navigate(AppRoutes.IMPORT) }

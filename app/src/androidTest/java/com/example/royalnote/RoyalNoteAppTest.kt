@@ -19,6 +19,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -89,6 +90,34 @@ class RoyalNoteAppTest {
         composeRule.onNodeWithText("设置").assertDoesNotExist()
         composeRule.onNodeWithText("返回主页").performClick()
         composeRule.onNodeWithText("首页内容").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigationShellDoesNotAddTopInsetToRealAnalysisScreen() {
+        val wrapped = mutableStateOf(false)
+        composeRule.setContent {
+            RoyalNoteTheme {
+                if (wrapped.value) {
+                    RoyalNoteNavigation(
+                        homeContent = { Text("首页内容") },
+                        analysisContent = { com.example.royalnote.ui.AnalysisScreen() },
+                        settingsContent = { Text("设置内容") },
+                        importContent = { Text("导入内容") },
+                    )
+                } else {
+                    com.example.royalnote.ui.AnalysisScreen()
+                }
+            }
+        }
+
+        val standaloneTop = composeRule.onNodeWithText("分析")
+            .getUnclippedBoundsInRoot().top.value
+        composeRule.runOnUiThread { wrapped.value = true }
+        composeRule.onNodeWithText("分析").performClick()
+        val wrappedTop = composeRule.onAllNodesWithText("分析")[0]
+            .getUnclippedBoundsInRoot().top.value
+
+        assertEquals(standaloneTop, wrappedTop, 0.5f)
     }
 
     @Test
