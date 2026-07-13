@@ -2,6 +2,10 @@ package com.example.royalnote.network
 
 import com.example.royalnote.settings.OpenRouterRequestSettings
 import com.example.royalnote.settings.OpenRouterSettingsProvider
+import com.example.royalnote.settings.AnalysisModel
+import com.example.royalnote.settings.ReasoningEffort
+import com.example.royalnote.settings.SettingsRepository
+import com.example.royalnote.settings.SettingsStorage
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,27 +37,22 @@ import org.junit.Test
 class OpenRouterRequestIntegrationTest {
     @Test
     fun requestUsesOneTrimmedSettingsSnapshotAndNextRequestUsesUpdates() = runTest {
-        var settings = OpenRouterRequestSettings(
-            apiKey = "  first-key  ",
-            modelId = "~openai/gpt-latest",
-            effort = "xhigh",
-        )
+        val repository = SettingsRepository(RequestTestSettingsStorage())
+        repository.updateApiKey("  first-key  ")
+        repository.selectModel(AnalysisModel.GPT_LATEST)
+        repository.selectEffort(AnalysisModel.GPT_LATEST, ReasoningEffort.XHIGH)
         val calls = ControllableCallFactory()
         val service = OpenRouterService(
-            settingsProvider = OpenRouterSettingsProvider {
-                settings.copy(apiKey = settings.apiKey.trim())
-            },
+            settingsProvider = repository,
             client = calls,
         )
 
         val first = async { service.parseRecords("昨天读书") }
         calls.awaitCallCount(1)
         val firstRequest = calls.calls.single().request()
-        settings = OpenRouterRequestSettings(
-            apiKey = "second-key",
-            modelId = "~google/gemini-pro-latest",
-            effort = "low",
-        )
+        repository.updateApiKey("second-key")
+        repository.selectModel(AnalysisModel.GEMINI_PRO_LATEST)
+        repository.selectEffort(AnalysisModel.GEMINI_PRO_LATEST, ReasoningEffort.LOW)
 
         assertEquals("Bearer first-key", firstRequest.header("Authorization"))
         assertRequestSettings(firstRequest, "~openai/gpt-latest", "xhigh")
@@ -85,6 +84,7 @@ class OpenRouterRequestIntegrationTest {
         runCurrent()
         assertNull(result)
         assertTrue(job.isCancelled)
+        assertTrue(call.responseBodyClosed)
     }
 
     @Test
@@ -151,20 +151,31 @@ class OpenRouterRequestIntegrationTest {
     }
 }
 
+private class RequestTestSettingsStorage : SettingsStorage {
+    private val values = mutableMapOf<String, String>()
+    override fun getString(key: String): String? = values[key]
+    override fun putString(key: String, value: String) {
+        values[key] = value
+    }
+}
+
 private class ControllableCallFactory : Call.Factory {
     val calls = mutableListOf<ControllableCall>()
 
     override fun newCall(request: Request): Call = ControllableCall(request).also(calls::add)
 
     suspend fun awaitCallCount(expected: Int) {
-        while (calls.size < expected) yield()
+        while (calls.size < expected || calls.take(expected).any { !it.isEnqueued }) yield()
     }
 }
 
 private class ControllableCall(private val capturedRequest: Request) : Call {
     private var callback: Callback? = null
+    val isEnqueued: Boolean get() = callback != null
     private var executed = false
     private var canceled = false
+    var responseBodyClosed = false
+        private set
 
     override fun request(): Request = capturedRequest
     override fun execute(): Response = error("Blocking execute must not be used")
@@ -181,6 +192,15 @@ private class ControllableCall(private val capturedRequest: Request) : Call {
     fun respondSuccess() = respond(200, successBody())
 
     fun respond(code: Int, body: String) {
+        val responseBody = object : okhttp3.ResponseBody() {
+            override fun contentType() = "application/json".toMediaType()
+            override fun contentLength() = body.toByteArray().size.toLong()
+            override fun source() = okio.Buffer().writeUtf8(body)
+            override fun close() {
+                responseBodyClosed = true
+                super.close()
+            }
+        }
         callback?.onResponse(
             this,
             Response.Builder()
@@ -188,7 +208,7 @@ private class ControllableCall(private val capturedRequest: Request) : Call {
                 .protocol(Protocol.HTTP_1_1)
                 .code(code)
                 .message("test")
-                .body(body.toResponseBody("application/json".toMediaType()))
+                .body(responseBody)
                 .build(),
         ) ?: error("Call was not enqueued")
     }
@@ -199,7 +219,7 @@ private class ControllableCall(private val capturedRequest: Request) : Call {
 }
 
 private fun successBody(): String {
-    val content = """{"records":[{"eventText":"读书","timestamp":"2026-07-11T10:00:00","startedAt":"2026-07-11T10:00:00","endedAt":"2026-07-11T10:00:00"}]}"""
+    val content = """{"records":[]}"""
     return completionBody(content)
 }
 

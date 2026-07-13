@@ -3,12 +3,16 @@ package com.example.royalnote.network
 import com.example.royalnote.settings.OpenRouterRequestSettings
 import com.example.royalnote.settings.OpenRouterSettingsProvider
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class MissingOpenRouterApiKeyException : IllegalStateException("OpenRouter API key is missing")
@@ -18,10 +22,11 @@ class OpenRouterService(
     private val client: Call.Factory = defaultOpenRouterClient(),
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val chatUrl: String = OpenRouterConfig.CHAT_COMPLETIONS_URL,
+    private val blockingDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : RecordParser {
     private val requestJson = Json(json) { encodeDefaults = true }
 
-    override suspend fun parseRecords(text: String): ParsedRecords {
+    override suspend fun parseRecords(text: String): ParsedRecords = withContext(blockingDispatcher) {
         val systemPrompt = """你是一个起居注解析助手。用户会粘贴之前的生活记录文字，你需要将其解析为结构化的 JSON 数据。
 
 规则：
@@ -54,7 +59,7 @@ class OpenRouterService(
             .post(body)
             .build()
 
-        return client.newCall(request).awaitResponse().use { response ->
+        client.newCall(request).awaitResponse().use { response ->
             if (!response.isSuccessful) {
                 throw OpenRouterResponseException("OpenRouter response code ${response.code}")
             }
@@ -66,6 +71,8 @@ class OpenRouterService(
                     ?: throw OpenRouterResponseException("OpenRouter response content is missing")
                 json.decodeFromString(ParsedRecords.serializer(), content)
             } catch (error: CancellationException) {
+                throw error
+            } catch (error: IOException) {
                 throw error
             } catch (error: OpenRouterResponseException) {
                 throw error

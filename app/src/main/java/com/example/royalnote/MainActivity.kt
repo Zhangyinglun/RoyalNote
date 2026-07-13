@@ -65,9 +65,6 @@ import com.example.royalnote.data.NoteRecord
 import com.example.royalnote.data.NoteRepository
 import com.example.royalnote.data.RoyalNoteDatabase
 import com.example.royalnote.network.OpenRouterService
-import com.example.royalnote.network.OpenRouterUsageService
-import com.example.royalnote.settings.SettingsRepository
-import com.example.royalnote.settings.SharedPreferencesSettingsStorage
 import com.example.royalnote.ui.AnalysisScreen
 import com.example.royalnote.ui.ImportScreen
 import com.example.royalnote.ui.ImportViewModel
@@ -104,11 +101,12 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val database = remember { RoyalNoteDatabase.getInstance(context) }
                 val repository = remember { NoteRepository(database.noteRecordDao()) }
-                val settingsRepository = remember {
-                    SettingsRepository(SharedPreferencesSettingsStorage(context.applicationContext))
+                val settingsDependencies = remember {
+                    MainActivityDependencyOverrides.resolve(context.applicationContext)
                 }
+                val settingsRepository = settingsDependencies.settingsRepository
                 val parser = remember { OpenRouterService(settingsRepository) }
-                val usageService = remember { OpenRouterUsageService() }
+                val usageService = settingsDependencies.usageProvider
 
                 val timelineViewModel: RecordTimelineViewModel = viewModel(
                     factory = RecordTimelineViewModelFactory(repository),
