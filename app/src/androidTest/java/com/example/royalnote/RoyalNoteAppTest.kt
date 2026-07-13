@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -394,14 +395,31 @@ class RoyalNoteAppTest {
         val pixels = composeRule.onNodeWithText("用量查询失败，请稍后再试")
             .captureToImage()
             .toPixelMap()
+        val renderedColors = mutableMapOf<Int, Int>()
+        (0 until pixels.height).forEach { y ->
+            (0 until pixels.width).forEach { x ->
+                val argb = pixels[x, y].toArgb()
+                renderedColors[argb] = renderedColors.getOrDefault(argb, 0) + 1
+            }
+        }
+        val sampledCardBackground = Color(
+            renderedColors.maxBy { (_, count) -> count }.key,
+        )
         val maximumRenderedContrast = (0 until pixels.height).maxOf { y ->
             (0 until pixels.width).maxOf { x ->
-                contrast(pixels[x, y], DeepInkSurface)
+                contrast(pixels[x, y], sampledCardBackground)
             }
         }
 
         assertTrue(
-            "Dark-theme error text contrast was $maximumRenderedContrast, expected at least 4.5:1",
+            "Rendered card background should be the Ink Fragrance surface color",
+            kotlin.math.abs(sampledCardBackground.red - DeepInkSurface.red) < 0.01f &&
+                kotlin.math.abs(sampledCardBackground.green - DeepInkSurface.green) < 0.01f &&
+                kotlin.math.abs(sampledCardBackground.blue - DeepInkSurface.blue) < 0.01f,
+        )
+        assertTrue(
+            "Dark-theme error text contrast against sampled card background was " +
+                "$maximumRenderedContrast, expected at least 4.5:1",
             maximumRenderedContrast >= 4.5,
         )
     }
