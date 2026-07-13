@@ -1,6 +1,5 @@
 # 原地修订记录实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 点击记录「修订」后，记录卡片原地展开为编辑模块；顶部仅负责新增，不再被编辑覆盖。
 

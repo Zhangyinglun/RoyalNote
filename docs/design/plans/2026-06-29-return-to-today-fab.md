@@ -1,6 +1,5 @@
 # Return To Today FAB Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add a bottom-right floating action button that appears after scrolling and returns the user to today's timeline position.
 

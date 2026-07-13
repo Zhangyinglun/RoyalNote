@@ -1,6 +1,5 @@
 # Bottom Navigation and OpenRouter Settings Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add `主页`、`分析`、`设置` bottom navigation, persist one shared OpenRouter API key/model/per-model effort configuration, make import use it, and show the current key's UTC-month `usage_monthly`.
 
@@ -1445,7 +1444,7 @@ git -C C:\Users\zhang commit -m "feat: add bottom navigation and settings module
 
 ## Final Verification Checklist
 
-- [ ] Re-read `docs/superpowers/specs/2026-07-12-bottom-navigation-settings-design.md` and map every requirement to Tasks 1–5.
+- [ ] Re-read `docs/design/specs/2026-07-12-bottom-navigation-settings-design.md` and map every requirement to Tasks 1–5.
 - [ ] Confirm no `BuildConfig.OPENROUTER_API_KEY`, `OpenRouterConfig.API_KEY`, or fixed `OpenRouterConfig.MODEL` reference remains with `rg -n "OPENROUTER_API_KEY|OpenRouterConfig\.(API_KEY|MODEL)" app`.
 - [ ] Confirm `usage_monthly` is the only amount displayed and no UI says remaining balance.
 - [ ] Confirm API Key values never appear in logs, test screenshots, exceptions, or Snackbar messages.

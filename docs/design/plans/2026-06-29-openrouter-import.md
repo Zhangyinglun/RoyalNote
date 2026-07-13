@@ -1,6 +1,5 @@
 # OpenRouter 导入功能实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在起居注 app 中新增"导入旧录"功能，用户粘贴大段文字后调用 DeepSeek V4 Pro 解析为多条记录并写入数据库。
 

@@ -1,6 +1,5 @@
 # 起居注时间段记录 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 让手动新增、编辑和 AI 批量导入都能保存开始与结束时间，并让时间线按开始时间排序、分组和展示。
 
@@ -867,4 +866,4 @@ Install or launch the debug app and check:
 
 Run path-limited `git status --short -- AndroidStudioProjects/RoyalNote` and `git diff -- AndroidStudioProjects/RoyalNote` from `C:\Users\zhang`.
 
-Expected: only the planned source, test, spec, and plan files changed; no credentials, build outputs, or `.superpowers` session files are included.
+Expected: only the planned source, test, spec, and plan files changed; no credentials, build outputs, or `local agent` session files are included.

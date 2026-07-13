@@ -1,6 +1,5 @@
 # 起居注 UI 美化实现计划：墨韵书卷
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 将"起居注"从默认 Material 3 紫色模板升级为中式古典书卷风格（墨韵书卷方案）。
 
