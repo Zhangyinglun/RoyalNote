@@ -46,14 +46,26 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import com.example.royalnote.R
 import com.example.royalnote.settings.AnalysisModel
 import com.example.royalnote.settings.AppSettings
 import com.example.royalnote.settings.ReasoningEffort
+import com.example.royalnote.ui.theme.MoodBrick
 import java.text.NumberFormat
 import java.util.Locale
 
 private val SettingsCardShape = RoundedCornerShape(8.dp)
+internal val SettingsSupportingTextStyle = TextStyle(
+    fontFamily = FontFamily.Serif,
+    fontWeight = FontWeight.Normal,
+    fontSize = 12.sp,
+    lineHeight = 18.sp,
+    letterSpacing = 0.5.sp,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,7 +114,7 @@ fun SettingsScreen(
                     "导入旧录将使用此处配置",
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = SettingsSupportingTextStyle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -145,7 +157,7 @@ private fun ApiKeyCard(
         )
         Text(
             "输入会自动保存在本机",
-            style = MaterialTheme.typography.bodySmall,
+            style = SettingsSupportingTextStyle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -173,7 +185,11 @@ private fun UsageCard(
         is UsageUiState.Error -> "当前 API Key · 按 UTC 月统计"
     }
 
-    InkSettingsCard(modifier = Modifier.heightIn(min = 148.dp)) {
+    InkSettingsCard(
+        modifier = Modifier
+            .heightIn(min = 148.dp)
+            .testTag("usageCard"),
+    ) {
         Text("本月消费", style = MaterialTheme.typography.titleMedium)
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -206,15 +222,23 @@ private fun UsageCard(
         }
         Text(
             helper,
-            style = MaterialTheme.typography.bodySmall,
+            style = SettingsSupportingTextStyle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (usage is UsageUiState.Error) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             Text(
-                usage.message,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
+                "\u00A0\n\u00A0",
+                modifier = Modifier.clearAndSetSemantics { },
+                style = SettingsSupportingTextStyle,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0f),
             )
+            if (usage is UsageUiState.Error) {
+                Text(
+                    usage.message,
+                    style = SettingsSupportingTextStyle,
+                    color = MoodBrick,
+                )
+            }
         }
     }
 }
