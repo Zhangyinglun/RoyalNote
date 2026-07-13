@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.royalnote.data.MoodLabels
 import com.example.royalnote.data.NoteRecord
+import com.example.royalnote.network.MissingOpenRouterApiKeyException
 import com.example.royalnote.network.ParsedRecord
 import com.example.royalnote.network.RecordParser
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,6 +74,11 @@ class ImportViewModel(
                 )
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: MissingOpenRouterApiKeyException) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    message = "请先在设置中填写 OpenRouter API Key",
+                )
             } catch (e: IOException) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

@@ -1,6 +1,7 @@
 package com.example.royalnote.ui
 
 import com.example.royalnote.data.NoteRecord
+import com.example.royalnote.network.MissingOpenRouterApiKeyException
 import com.example.royalnote.network.ParsedRecord
 import com.example.royalnote.network.ParsedRecords
 import com.example.royalnote.network.RecordParser
@@ -101,6 +102,19 @@ class ImportViewModelTest {
         assertEquals("网络不通，稍后再试", viewModel.uiState.value.message)
         assertFalse(viewModel.uiState.value.isLoading)
         assertFalse(viewModel.uiState.value.isSuccess)
+    }
+
+    @Test
+    fun missingApiKeyShowsSettingsMessage() = runTest {
+        parser.exception = MissingOpenRouterApiKeyException()
+        val viewModel = ImportViewModel(parser, repository)
+
+        viewModel.updateText("一些文字")
+        viewModel.importRecords()
+        advanceUntilIdle()
+
+        assertEquals("请先在设置中填写 OpenRouter API Key", viewModel.uiState.value.message)
+        assertFalse(viewModel.uiState.value.isLoading)
     }
 
     @Test
