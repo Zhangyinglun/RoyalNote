@@ -1,6 +1,8 @@
 package com.example.royalnote
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -34,6 +36,7 @@ import com.example.royalnote.settings.AppSettings
 import com.example.royalnote.ui.ImportScreen
 import com.example.royalnote.ui.ImportUiState
 import com.example.royalnote.ui.RecordTimelineUiState
+import com.example.royalnote.ui.RoyalNoteNavigation
 import com.example.royalnote.ui.SettingsScreen
 import com.example.royalnote.ui.SettingsSupportingTextStyle
 import com.example.royalnote.ui.SettingsUiState
@@ -52,6 +55,41 @@ import org.junit.runner.RunWith
 class RoyalNoteAppTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun bottomNavigationSwitchesTopLevelScreensAndHidesOnImport() {
+        composeRule.setContent {
+            RoyalNoteTheme {
+                RoyalNoteNavigation(
+                    homeContent = { onImport ->
+                        Column {
+                            Text("首页内容")
+                            Button(onClick = onImport) { Text("测试导入") }
+                        }
+                    },
+                    analysisContent = { Text("分析内容") },
+                    settingsContent = { Text("设置内容") },
+                    importContent = { onBack ->
+                        Button(onClick = onBack) { Text("返回主页") }
+                    },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("主页").assertIsDisplayed()
+        composeRule.onNodeWithText("分析").performClick()
+        composeRule.onNodeWithText("分析内容").assertIsDisplayed()
+        composeRule.onNodeWithText("设置").performClick()
+        composeRule.onNodeWithText("设置内容").assertIsDisplayed()
+        composeRule.onNodeWithText("主页").performClick()
+        composeRule.onNodeWithText("测试导入").performClick()
+        composeRule.onNodeWithText("返回主页").assertIsDisplayed()
+        composeRule.onNodeWithText("主页").assertDoesNotExist()
+        composeRule.onNodeWithText("分析").assertDoesNotExist()
+        composeRule.onNodeWithText("设置").assertDoesNotExist()
+        composeRule.onNodeWithText("返回主页").performClick()
+        composeRule.onNodeWithText("首页内容").assertIsDisplayed()
+    }
 
     @Test
     fun clickingEditOpensInlineEditorAndSaveRestoresUpdatedCard() {

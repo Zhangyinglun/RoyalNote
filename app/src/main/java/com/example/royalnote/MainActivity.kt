@@ -45,6 +45,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,22 +60,25 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.royalnote.data.MoodLabels
 import com.example.royalnote.data.NoteRecord
 import com.example.royalnote.data.NoteRepository
 import com.example.royalnote.data.RoyalNoteDatabase
 import com.example.royalnote.network.OpenRouterService
+import com.example.royalnote.network.OpenRouterUsageService
 import com.example.royalnote.settings.SettingsRepository
 import com.example.royalnote.settings.SharedPreferencesSettingsStorage
+import com.example.royalnote.ui.AnalysisScreen
 import com.example.royalnote.ui.ImportScreen
 import com.example.royalnote.ui.ImportViewModel
 import com.example.royalnote.ui.ImportViewModelFactory
 import com.example.royalnote.ui.RecordTimelineUiState
 import com.example.royalnote.ui.RecordTimelineViewModel
 import com.example.royalnote.ui.RecordTimelineViewModelFactory
+import com.example.royalnote.ui.RoyalNoteNavigation
+import com.example.royalnote.ui.SettingsScreen
+import com.example.royalnote.ui.SettingsViewModel
+import com.example.royalnote.ui.SettingsViewModelFactory
 import com.example.royalnote.ui.TimelineDay
 import com.example.royalnote.ui.theme.MoodBrick
 import com.example.royalnote.ui.theme.MoodCeladon
@@ -94,6 +98,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        window.isNavigationBarContrastEnforced = false
         setContent {
             RoyalNoteTheme {
                 val context = LocalContext.current
@@ -103,6 +108,7 @@ class MainActivity : ComponentActivity() {
                     SettingsRepository(SharedPreferencesSettingsStorage(context.applicationContext))
                 }
                 val parser = remember { OpenRouterService(settingsRepository) }
+                val usageService = remember { OpenRouterUsageService() }
 
                 val timelineViewModel: RecordTimelineViewModel = viewModel(
                     factory = RecordTimelineViewModelFactory(repository),
@@ -110,17 +116,21 @@ class MainActivity : ComponentActivity() {
                 val importViewModel: ImportViewModel = viewModel(
                     factory = ImportViewModelFactory(parser, repository),
                 )
+                val settingsViewModel: SettingsViewModel = viewModel(
+                    factory = SettingsViewModelFactory(settingsRepository, usageService),
+                )
 
                 LaunchedEffect(Unit) {
                     SeedData.seedIfEmpty(repository)
                 }
 
-                val navController = rememberNavController()
                 val uiState by timelineViewModel.uiState.collectAsStateWithLifecycle()
                 val importUiState by importViewModel.uiState.collectAsStateWithLifecycle()
+                val settingsUiState by settingsViewModel.uiState.collectAsStateWithLifecycle()
+                var keyVisible by rememberSaveable { mutableStateOf(false) }
 
-                NavHost(navController = navController, startDestination = "main") {
-                    composable("main") {
+                RoyalNoteNavigation(
+                    homeContent = { onImport ->
                         RoyalNoteApp(
                             uiState = uiState,
                             onEventTextChange = timelineViewModel::updateEventText,
@@ -134,27 +144,40 @@ class MainActivity : ComponentActivity() {
                             onCancelEdit = timelineViewModel::cancelEditing,
                             onDelete = timelineViewModel::delete,
                             onMessageShown = timelineViewModel::clearMessage,
-                            onImportClick = { navController.navigate("import") },
+                            onImportClick = onImport,
                         )
-                    }
-                    composable("import") {
+                    },
+                    analysisContent = { AnalysisScreen() },
+                    settingsContent = {
+                        SettingsScreen(
+                            uiState = settingsUiState,
+                            keyVisible = keyVisible,
+                            onApiKeyChange = settingsViewModel::updateApiKey,
+                            onToggleKeyVisibility = { keyVisible = !keyVisible },
+                            onModelSelected = settingsViewModel::selectModel,
+                            onEffortSelected = settingsViewModel::selectEffort,
+                            onRefreshUsage = settingsViewModel::refreshUsage,
+                            onVisible = settingsViewModel::onScreenVisible,
+                        )
+                    },
+                    importContent = { onBack ->
                         ImportScreen(
                             uiState = importUiState,
                             onTextChange = importViewModel::updateText,
                             onImportClick = importViewModel::importRecords,
                             onBack = {
                                 importViewModel.resetState()
-                                navController.popBackStack()
+                                onBack()
                             },
                             onMessageShown = importViewModel::clearMessage,
                             onSuccessConfirmed = {
                                 importViewModel.dismissSuccessDialog()
                                 importViewModel.resetState()
-                                navController.popBackStack()
+                                onBack()
                             },
                         )
-                    }
-                }
+                    },
+                )
             }
         }
     }
