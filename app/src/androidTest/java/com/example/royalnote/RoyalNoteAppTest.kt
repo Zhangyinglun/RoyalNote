@@ -5,17 +5,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.royalnote.data.NoteRecord
+import com.example.royalnote.settings.AnalysisModel
+import com.example.royalnote.settings.AppSettings
 import com.example.royalnote.ui.ImportScreen
 import com.example.royalnote.ui.ImportUiState
 import com.example.royalnote.ui.RecordTimelineUiState
+import com.example.royalnote.ui.SettingsScreen
+import com.example.royalnote.ui.SettingsUiState
 import com.example.royalnote.ui.TimelineDay
+import com.example.royalnote.ui.UsageUiState
 import com.example.royalnote.ui.theme.RoyalNoteTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -163,5 +171,100 @@ class RoyalNoteAppTest {
         composeRule.onNodeWithText("回到首页").performClick()
 
         assertEquals(1, confirmedReturns)
+    }
+
+    @Test
+    fun settingsScreenFiltersEffortsAndReportsSelections() {
+        var state by mutableStateOf(SettingsUiState())
+        composeRule.setContent {
+            RoyalNoteTheme {
+                SettingsScreen(
+                    uiState = state,
+                    onApiKeyChange = {
+                        state = state.copy(settings = state.settings.copy(apiKey = it))
+                    },
+                    onToggleKeyVisibility = {},
+                    keyVisible = false,
+                    onModelSelected = {
+                        state = state.copy(settings = state.settings.copy(selectedModel = it))
+                    },
+                    onEffortSelected = { model, effort ->
+                        state = state.copy(
+                            settings = state.settings.copy(
+                                efforts = state.settings.efforts + (model to effort),
+                            ),
+                        )
+                    },
+                    onRefreshUsage = {},
+                    onVisible = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("DeepSeek V4 Pro").assertIsDisplayed()
+        composeRule.onNodeWithText("xhigh").assertIsDisplayed()
+        composeRule.onNodeWithText("max").assertDoesNotExist()
+        composeRule.onNodeWithText("GPT Latest").performClick()
+        composeRule.onNodeWithText("max").assertIsDisplayed()
+        composeRule.onNodeWithText("none").assertIsDisplayed()
+    }
+
+    @Test
+    fun usageCardShowsMissingLoadingSuccessAndErrorStates() {
+        lateinit var setUsage: (UsageUiState) -> Unit
+        composeRule.setContent {
+            var usage by remember { mutableStateOf<UsageUiState>(UsageUiState.MissingKey) }
+            setUsage = { usage = it }
+            RoyalNoteTheme {
+                SettingsScreen(
+                    uiState = SettingsUiState(usage = usage),
+                    keyVisible = false,
+                    onApiKeyChange = {},
+                    onToggleKeyVisibility = {},
+                    onModelSelected = {},
+                    onEffortSelected = { _, _ -> },
+                    onRefreshUsage = {},
+                    onVisible = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("填写 API Key 后可查询").assertIsDisplayed()
+        composeRule.runOnUiThread { setUsage(UsageUiState.Loading()) }
+        composeRule.onNodeWithTag("usageLoading").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("刷新本月消费").assertIsNotEnabled()
+        composeRule.runOnUiThread { setUsage(UsageUiState.Success(12.34, 1L)) }
+        composeRule.onNodeWithText("\$12.34").assertIsDisplayed()
+        composeRule.runOnUiThread {
+            setUsage(UsageUiState.Error("用量查询失败，请稍后再试", 8.0, 1L))
+        }
+        composeRule.onNodeWithText("\$8.00").assertIsDisplayed()
+        composeRule.onNodeWithText("用量查询失败，请稍后再试").assertIsDisplayed()
+    }
+
+    @Test
+    fun apiKeyIsPasswordByDefaultAndVisibilityActionIsAccessible() {
+        composeRule.setContent {
+            var visible by remember { mutableStateOf(false) }
+            RoyalNoteTheme {
+                SettingsScreen(
+                    uiState = SettingsUiState(
+                        settings = AppSettings(apiKey = "sk-or-v1-secret"),
+                    ),
+                    keyVisible = visible,
+                    onApiKeyChange = {},
+                    onToggleKeyVisibility = { visible = !visible },
+                    onModelSelected = {},
+                    onEffortSelected = { _, _ -> },
+                    onRefreshUsage = {},
+                    onVisible = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("显示 API Key")
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.onNodeWithContentDescription("隐藏 API Key").assertIsDisplayed()
     }
 }
