@@ -38,3 +38,6 @@ val MoodGray = Color(0xFF6B7080)      // 疲惫 - 黛灰
 val MoodBrick = Color(0xFF8A5340)     // 烦躁 - 赭褐
 val MoodInkBlue = Color(0xFF425663)   // 低落 - 墨青
 val MoodPurple = Color(0xFF6B4A5A)    // 焦虑 - 紫赭
+
+// 深色模式错误提示：在 DeepInkSurface 上保持古雅暖陶色，同时满足正文对比度。
+val MutedTerracottaLight = Color(0xFFD08B76)

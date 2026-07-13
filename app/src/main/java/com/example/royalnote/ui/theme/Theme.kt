@@ -20,6 +20,7 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant = AgedPaperVariant,
     onSurfaceVariant = InkSecondary,
     outline = PaperBorder,
+    error = MoodBrick,
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -36,6 +37,7 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = DeepInkVariant,
     onSurfaceVariant = RiceTextVariant,
     outline = DeepInkOutline,
+    error = MutedTerracottaLight,
 )
 
 @Composable

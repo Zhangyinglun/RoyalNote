@@ -1,5 +1,10 @@
 package com.example.royalnote
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,6 +23,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.testTag as semanticsTestTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.royalnote.data.NoteRecord
 import com.example.royalnote.settings.AnalysisModel
@@ -31,6 +39,7 @@ import com.example.royalnote.ui.SettingsUiState
 import com.example.royalnote.ui.TimelineDay
 import com.example.royalnote.ui.UsageUiState
 import com.example.royalnote.ui.theme.MoodBrick
+import com.example.royalnote.ui.theme.DeepInkSurface
 import com.example.royalnote.ui.theme.RoyalNoteTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -345,5 +354,93 @@ class RoyalNoteAppTest {
             .getUnclippedBoundsInRoot().height
 
         assertEquals(missingHeight, errorHeight)
+    }
+
+    @Test
+    fun darkThemeSettingsErrorMeetsReadableContrast() {
+        composeRule.setContent {
+            RoyalNoteTheme(darkTheme = true) {
+                SettingsScreen(
+                    uiState = SettingsUiState(
+                        usage = UsageUiState.Error("用量查询失败，请稍后再试"),
+                    ),
+                    keyVisible = false,
+                    onApiKeyChange = {},
+                    onToggleKeyVisibility = {},
+                    onModelSelected = {},
+                    onEffortSelected = { _, _ -> },
+                    onRefreshUsage = {},
+                    onVisible = {},
+                )
+            }
+        }
+
+        fun linearChannel(value: Float): Double = if (value <= 0.04045f) {
+            value.toDouble() / 12.92
+        } else {
+            Math.pow((value.toDouble() + 0.055) / 1.055, 2.4)
+        }
+        fun luminance(color: Color): Double =
+            0.2126 * linearChannel(color.red) +
+                0.7152 * linearChannel(color.green) +
+                0.0722 * linearChannel(color.blue)
+        fun contrast(first: Color, second: Color): Double {
+            val firstLuminance = luminance(first)
+            val secondLuminance = luminance(second)
+            return (maxOf(firstLuminance, secondLuminance) + 0.05) /
+                (minOf(firstLuminance, secondLuminance) + 0.05)
+        }
+
+        val pixels = composeRule.onNodeWithText("用量查询失败，请稍后再试")
+            .captureToImage()
+            .toPixelMap()
+        val maximumRenderedContrast = (0 until pixels.height).maxOf { y ->
+            (0 until pixels.width).maxOf { x ->
+                contrast(pixels[x, y], DeepInkSurface)
+            }
+        }
+
+        assertTrue(
+            "Dark-theme error text contrast was $maximumRenderedContrast, expected at least 4.5:1",
+            maximumRenderedContrast >= 4.5,
+        )
+    }
+
+    @Test
+    fun apiKeyFloatingLabelUsesRenderedSerifStyle() {
+        composeRule.setContent {
+            RoyalNoteTheme {
+                Box {
+                    SettingsScreen(
+                        uiState = SettingsUiState(
+                            settings = AppSettings(apiKey = "sk-or-v1-test"),
+                        ),
+                        keyVisible = false,
+                        onApiKeyChange = {},
+                        onToggleKeyVisibility = {},
+                        onModelSelected = {},
+                        onEffortSelected = { _, _ -> },
+                        onRefreshUsage = {},
+                        onVisible = {},
+                    )
+                    Text(
+                        "API Key",
+                        modifier = Modifier
+                            .alpha(0f)
+                            .clearAndSetSemantics {
+                                semanticsTestTag = "serifApiKeyLabelReference"
+                            },
+                        style = SettingsSupportingTextStyle,
+                    )
+                }
+            }
+        }
+
+        val renderedWidth = composeRule.onNodeWithText("API Key", useUnmergedTree = true)
+            .getUnclippedBoundsInRoot().width.value
+        val serifWidth = composeRule.onNodeWithTag("serifApiKeyLabelReference")
+            .getUnclippedBoundsInRoot().width.value
+
+        assertEquals(serifWidth, renderedWidth, 0.01f)
     }
 }

@@ -54,7 +54,6 @@ import com.example.royalnote.R
 import com.example.royalnote.settings.AnalysisModel
 import com.example.royalnote.settings.AppSettings
 import com.example.royalnote.settings.ReasoningEffort
-import com.example.royalnote.ui.theme.MoodBrick
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -135,7 +134,7 @@ private fun ApiKeyCard(
             value = apiKey,
             onValueChange = onApiKeyChange,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("API Key") },
+            label = { Text("API Key", style = SettingsSupportingTextStyle) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = if (keyVisible) {
@@ -236,7 +235,7 @@ private fun UsageCard(
                 Text(
                     usage.message,
                     style = SettingsSupportingTextStyle,
-                    color = MoodBrick,
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         }
