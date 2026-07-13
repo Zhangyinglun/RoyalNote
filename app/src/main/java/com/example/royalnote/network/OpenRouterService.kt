@@ -2,15 +2,13 @@ package com.example.royalnote.network
 
 import com.example.royalnote.settings.OpenRouterRequestSettings
 import com.example.royalnote.settings.OpenRouterSettingsProvider
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class MissingOpenRouterApiKeyException : IllegalStateException("OpenRouter API key is missing")
@@ -21,7 +19,9 @@ class OpenRouterService(
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val chatUrl: String = OpenRouterConfig.CHAT_COMPLETIONS_URL,
 ) : RecordParser {
-    override suspend fun parseRecords(text: String): ParsedRecords = withContext(Dispatchers.IO) {
+    private val requestJson = Json(json) { encodeDefaults = true }
+
+    override suspend fun parseRecords(text: String): ParsedRecords {
         val systemPrompt = """你是一个起居注解析助手。用户会粘贴之前的生活记录文字，你需要将其解析为结构化的 JSON 数据。
 
 规则：
@@ -45,7 +45,7 @@ class OpenRouterService(
             systemPrompt = systemPrompt,
             settings = settings,
         )
-        val body = json.encodeToString(ChatCompletionRequest.serializer(), requestBody)
+        val body = requestJson.encodeToString(ChatCompletionRequest.serializer(), requestBody)
             .toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url(chatUrl)
@@ -54,13 +54,24 @@ class OpenRouterService(
             .post(body)
             .build()
 
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("API error: ${response.code}")
-            val responseBody = response.body.string()
-            val apiResponse = json.decodeFromString(ChatCompletionResponse.serializer(), responseBody)
-            val content = apiResponse.choices.firstOrNull()?.message?.content
-                ?: throw IOException("No content in response")
-            json.decodeFromString(ParsedRecords.serializer(), content)
+        return client.newCall(request).awaitResponse().use { response ->
+            if (!response.isSuccessful) {
+                throw OpenRouterResponseException("OpenRouter response code ${response.code}")
+            }
+            try {
+                val responseBody = response.body.string()
+                val apiResponse = json.decodeFromString(ChatCompletionResponse.serializer(), responseBody)
+                val content = apiResponse.choices.firstOrNull()?.message?.content
+                    ?.takeIf(String::isNotBlank)
+                    ?: throw OpenRouterResponseException("OpenRouter response content is missing")
+                json.decodeFromString(ParsedRecords.serializer(), content)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: OpenRouterResponseException) {
+                throw error
+            } catch (error: Exception) {
+                throw OpenRouterResponseException("OpenRouter response is malformed", error)
+            }
         }
     }
 }

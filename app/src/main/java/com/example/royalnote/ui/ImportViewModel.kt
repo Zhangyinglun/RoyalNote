@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.royalnote.data.MoodLabels
 import com.example.royalnote.data.NoteRecord
-import com.example.royalnote.network.MissingOpenRouterApiKeyException
 import com.example.royalnote.network.ParsedRecord
 import com.example.royalnote.network.RecordParser
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +12,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -74,20 +72,10 @@ class ImportViewModel(
                 )
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: MissingOpenRouterApiKeyException) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    message = "请先在设置中填写 OpenRouter API Key",
-                )
-            } catch (e: IOException) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    message = "网络不通，稍后再试",
-                )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    message = "解析未成，稍后再试",
+                    message = importFailureMessage(e),
                 )
             }
         }

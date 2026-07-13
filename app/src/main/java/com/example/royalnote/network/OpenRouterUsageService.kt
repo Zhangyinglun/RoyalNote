@@ -1,8 +1,6 @@
 package com.example.royalnote.network
 
 import java.io.IOException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -23,13 +21,13 @@ class OpenRouterUsageService(
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val endpoint: String = OpenRouterConfig.CURRENT_KEY_URL,
 ) : OpenRouterUsageProvider {
-    override suspend fun monthlyUsage(apiKey: String): MonthlyUsage = withContext(Dispatchers.IO) {
+    override suspend fun monthlyUsage(apiKey: String): MonthlyUsage {
         val request = Request.Builder()
             .url(endpoint)
             .addHeader("Authorization", "Bearer ${apiKey.trim()}")
             .get()
             .build()
-        client.newCall(request).execute().use { response ->
+        return client.newCall(request).awaitResponse().use { response ->
             if (response.code == 401) throw InvalidOpenRouterApiKeyException()
             if (!response.isSuccessful) throw IOException("Usage API error: ${response.code}")
             val decoded = json.decodeFromString(CurrentKeyResponse.serializer(), response.body.string())

@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
@@ -252,7 +253,8 @@ private fun ModelCard(
 ) {
     InkSettingsCard {
         Text("分析模型", style = MaterialTheme.typography.titleMedium)
-        AnalysisModel.entries.forEach { model ->
+        Column(modifier = Modifier.selectableGroup()) {
+            AnalysisModel.entries.forEach { model ->
             val selected = model == settings.selectedModel
             Row(
                 modifier = Modifier
@@ -288,6 +290,7 @@ private fun ModelCard(
                         )
                     }
                 }
+            }
             }
         }
     }
