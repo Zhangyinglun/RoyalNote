@@ -26,6 +26,12 @@
 - `RecordTimelineViewModel` owns form state, edit state, validation, snackbar messages, and date grouping. It depends on `RecordOperations`, which keeps JVM tests independent from Room.
 - MVP scope in docs and code is add/display/edit/delete local records only. Do not add search, mood filtering, manual time editing, cloud sync, export, or multi-page navigation unless the user asks.
 
+## Visual Confirmation Workflow
+
+- Whenever frontend styling is changed or a new feature is added, also produce a self-contained HTML visual mockup for the user to review and confirm.
+- The HTML mockup should reflect the proposed UI closely, follow the `墨香` design system, and be easy to open locally in a browser.
+- Treat the HTML as a visual confirmation artifact; do not consider the UI work fully accepted until the user has had an opportunity to review it.
+
 ## Design System — 墨香 (Ink Fragrance)
 
 **Design philosophy:** 古朴 (antique), 低调奢华 (understated luxury). Like an imperial scribe's desk — aged xuan paper, dark ink, muted bronze accents. Nothing shouts; everything whispers quality.

@@ -3,34 +3,37 @@ package com.example.royalnote
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.toPixelMap
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.testTag as semanticsTestTag
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.espresso.Espresso.pressBack
 import com.example.royalnote.data.NoteRecord
 import com.example.royalnote.settings.AnalysisModel
 import com.example.royalnote.settings.AppSettings
@@ -41,12 +44,19 @@ import com.example.royalnote.ui.RoyalNoteNavigation
 import com.example.royalnote.ui.SettingsScreen
 import com.example.royalnote.ui.SettingsSupportingTextStyle
 import com.example.royalnote.ui.SettingsUiState
+import com.example.royalnote.ui.TimeRangeFields
 import com.example.royalnote.ui.TimelineDay
 import com.example.royalnote.ui.UsageUiState
-import com.example.royalnote.ui.theme.MoodBrick
+import com.example.royalnote.ui.theme.AgedPaperSurface
 import com.example.royalnote.ui.theme.DeepInkSurface
+import com.example.royalnote.ui.theme.PaperBorder
+import com.example.royalnote.ui.theme.MoodBrick
 import com.example.royalnote.ui.theme.RoyalNoteTheme
+import androidx.compose.ui.text.font.FontFamily
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -56,6 +66,25 @@ import org.junit.runner.RunWith
 class RoyalNoteAppTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun lightThemeUsesAgedPaperForMaterialSurfaceContainers() {
+        var surfaceContainerHigh = Color.Unspecified
+        var surfaceContainerHighest = Color.Unspecified
+        var outlineVariant = Color.Unspecified
+
+        composeRule.setContent {
+            RoyalNoteTheme(darkTheme = false) {
+                surfaceContainerHigh = MaterialTheme.colorScheme.surfaceContainerHigh
+                surfaceContainerHighest = MaterialTheme.colorScheme.surfaceContainerHighest
+                outlineVariant = MaterialTheme.colorScheme.outlineVariant
+            }
+        }
+
+        assertEquals(AgedPaperSurface, surfaceContainerHigh)
+        assertEquals(AgedPaperSurface, surfaceContainerHighest)
+        assertEquals(PaperBorder, outlineVariant)
+    }
 
     @Test
     fun bottomNavigationSwitchesTopLevelScreensAndHidesOnImport() {
@@ -122,11 +151,15 @@ class RoyalNoteAppTest {
 
     @Test
     fun clickingEditOpensInlineEditorAndSaveRestoresUpdatedCard() {
+        val startedAt = localMillis(2026, 7, 11, 9, 0)
+        val endedAt = localMillis(2026, 7, 11, 10, 30)
         val initialRecord = NoteRecord(
             id = 1,
             eventText = "读了半小时书",
             moodTag = "平静",
             moodNote = "心里安稳了一点",
+            startedAt = startedAt,
+            endedAt = endedAt,
             createdAt = 1_787_777_700_000L,
             updatedAt = 1_787_777_700_000L,
         )
@@ -145,9 +178,13 @@ class RoyalNoteAppTest {
                     onEventTextChange = { uiState = uiState.copy(eventText = it) },
                     onMoodSelected = { uiState = uiState.copy(selectedMood = it) },
                     onMoodNoteChange = { uiState = uiState.copy(moodNote = it) },
+                    onStartedAtChange = { uiState = uiState.copy(startedAt = it) },
+                    onEndedAtChange = { uiState = uiState.copy(endedAt = it) },
                     onEditEventTextChange = { uiState = uiState.copy(editEventText = it) },
                     onEditMoodSelected = { uiState = uiState.copy(editSelectedMood = it) },
                     onEditMoodNoteChange = { uiState = uiState.copy(editMoodNote = it) },
+                    onEditStartedAtChange = { uiState = uiState.copy(editStartedAt = it) },
+                    onEditEndedAtChange = { uiState = uiState.copy(editEndedAt = it) },
                     onSave = {
                         val editing = uiState.editingRecord
                         if (editing != null) {
@@ -155,6 +192,8 @@ class RoyalNoteAppTest {
                                 eventText = uiState.editEventText,
                                 moodTag = uiState.editSelectedMood,
                                 moodNote = uiState.editMoodNote.ifBlank { null },
+                                startedAt = uiState.editStartedAt ?: editing.startedAt,
+                                endedAt = uiState.editEndedAt ?: editing.endedAt,
                                 updatedAt = editing.updatedAt + 1,
                             )
                             uiState = uiState.copy(
@@ -171,6 +210,8 @@ class RoyalNoteAppTest {
                             editEventText = record.eventText,
                             editSelectedMood = record.moodTag,
                             editMoodNote = record.moodNote.orEmpty(),
+                            editStartedAt = record.startedAt,
+                            editEndedAt = record.endedAt,
                             editingRecord = record,
                         )
                     },
@@ -191,6 +232,7 @@ class RoyalNoteAppTest {
 
         composeRule.onNodeWithText("速录一则").assertIsDisplayed()
         composeRule.onNodeWithText("读了半小时书").assertIsDisplayed()
+        composeRule.onNodeWithText("09:00–10:30").assertIsDisplayed()
 
         composeRule.onNodeWithText("修订").performClick()
 
@@ -202,7 +244,186 @@ class RoyalNoteAppTest {
         composeRule.onNodeWithText("改毕入录").performScrollTo().performClick()
 
         composeRule.onNodeWithText("读了两页书摘").assertIsDisplayed()
+        composeRule.onNodeWithText("09:00–10:30").assertIsDisplayed()
         composeRule.onNodeWithText("修订").assertIsDisplayed()
+    }
+
+    @Test
+    fun timeRangeControlsHaveDistinctAccessibleNamesAndClickActions() {
+        val zone = ZoneId.of("UTC")
+        val startedAt = localMillis(zone, 2026, 7, 11, 9, 0)
+        val endedAt = localMillis(zone, 2026, 7, 11, 10, 30)
+
+        composeRule.setContent {
+            RoyalNoteTheme {
+                TimeRangeFields(
+                    startedAt = startedAt,
+                    endedAt = endedAt,
+                    onStartedAtChange = {},
+                    onEndedAtChange = {},
+                    zoneId = zone,
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("startDateButton")
+            .assertContentDescriptionEquals("开始日期，2026-07-11")
+            .assertHasClickAction()
+        composeRule.onNodeWithTag("startTimeButton")
+            .assertContentDescriptionEquals("开始时间，09:00")
+            .assertHasClickAction()
+        composeRule.onNodeWithTag("endDateButton")
+            .assertContentDescriptionEquals("结束日期，2026-07-11")
+            .assertHasClickAction()
+        composeRule.onNodeWithTag("endTimeButton")
+            .assertContentDescriptionEquals("结束时间，10:30")
+            .assertHasClickAction()
+    }
+
+    @Test
+    fun confirmingStartDateCallsOnlyStartCallback() {
+        val zone = ZoneId.of("UTC")
+        val startedAt = localMillis(zone, 2026, 7, 11, 9, 0)
+        val endedAt = localMillis(zone, 2026, 7, 11, 10, 30)
+        var startedResult: Long? = null
+        var endedResult: Long? = null
+
+        composeRule.setContent {
+            RoyalNoteTheme {
+                TimeRangeFields(
+                    startedAt = startedAt,
+                    endedAt = endedAt,
+                    onStartedAtChange = { startedResult = it },
+                    onEndedAtChange = { endedResult = it },
+                    zoneId = zone,
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("startDateButton").performClick()
+        composeRule.onNodeWithTag("datePicker").assertIsDisplayed()
+        composeRule.onNodeWithTag("dateConfirmButton").performClick()
+
+        assertEquals(startedAt, startedResult)
+        assertNull(endedResult)
+    }
+
+    @Test
+    fun cancelAndDismissDoNotCallTimeRangeCallbacks() {
+        val zone = ZoneId.of("UTC")
+        val startedAt = localMillis(zone, 2026, 7, 11, 9, 0)
+        val endedAt = localMillis(zone, 2026, 7, 11, 10, 30)
+        var startedResult: Long? = null
+        var endedResult: Long? = null
+
+        composeRule.setContent {
+            RoyalNoteTheme {
+                TimeRangeFields(
+                    startedAt = startedAt,
+                    endedAt = endedAt,
+                    onStartedAtChange = { startedResult = it },
+                    onEndedAtChange = { endedResult = it },
+                    zoneId = zone,
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("startDateButton").performClick()
+        composeRule.onNodeWithTag("dateCancelButton").performClick()
+        composeRule.onNodeWithTag("endTimeButton").performClick()
+        composeRule.onNodeWithTag("timePicker").assertIsDisplayed()
+        pressBack()
+        composeRule.waitForIdle()
+
+        assertNull(startedResult)
+        assertNull(endedResult)
+    }
+
+    @Test
+    fun confirmingEndTimeCallsOnlyEndCallback() {
+        val zone = ZoneId.of("UTC")
+        val startedAt = localMillis(zone, 2026, 7, 11, 9, 0)
+        val endedAt = localMillis(zone, 2026, 7, 11, 10, 30)
+        var startedResult: Long? = null
+        var endedResult: Long? = null
+
+        composeRule.setContent {
+            RoyalNoteTheme {
+                TimeRangeFields(
+                    startedAt = startedAt,
+                    endedAt = endedAt,
+                    onStartedAtChange = { startedResult = it },
+                    onEndedAtChange = { endedResult = it },
+                    zoneId = zone,
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("endTimeButton").performClick()
+        composeRule.onNodeWithTag("timePicker").assertIsDisplayed()
+        composeRule.onNodeWithTag("timeConfirmButton").performClick()
+
+        assertNull(startedResult)
+        assertEquals(endedAt, endedResult)
+    }
+
+    @Test
+    fun recordCardsDisplaySameDayAndCrossDayTimeRanges() {
+        val sameDayStart = localMillis(2026, 7, 11, 9, 0)
+        val sameDayEnd = localMillis(2026, 7, 11, 10, 30)
+        val crossDayStart = localMillis(2026, 7, 11, 23, 30)
+        val crossDayEnd = localMillis(2026, 7, 12, 0, 30)
+        val records = listOf(
+            NoteRecord(
+                id = 1,
+                eventText = "同日记录",
+                moodTag = null,
+                moodNote = null,
+                startedAt = sameDayStart,
+                endedAt = sameDayEnd,
+                createdAt = sameDayStart,
+                updatedAt = sameDayStart,
+            ),
+            NoteRecord(
+                id = 2,
+                eventText = "跨日记录",
+                moodTag = null,
+                moodNote = null,
+                startedAt = crossDayStart,
+                endedAt = crossDayEnd,
+                createdAt = crossDayStart,
+                updatedAt = crossDayStart,
+            ),
+        )
+
+        composeRule.setContent {
+            RoyalNoteTheme {
+                RoyalNoteApp(
+                    uiState = RecordTimelineUiState(
+                        timelineDays = listOf(TimelineDay(label = "今日", records = records)),
+                    ),
+                    onEventTextChange = {},
+                    onMoodSelected = {},
+                    onMoodNoteChange = {},
+                    onStartedAtChange = {},
+                    onEndedAtChange = {},
+                    onEditEventTextChange = {},
+                    onEditMoodSelected = {},
+                    onEditMoodNoteChange = {},
+                    onEditStartedAtChange = {},
+                    onEditEndedAtChange = {},
+                    onSave = {},
+                    onEdit = {},
+                    onCancelEdit = {},
+                    onDelete = {},
+                    onMessageShown = {},
+                    onImportClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("09:00–10:30").assertIsDisplayed()
+        composeRule.onNodeWithText("07-11 23:30–07-12 00:30").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -216,9 +437,13 @@ class RoyalNoteAppTest {
                     onEventTextChange = {},
                     onMoodSelected = {},
                     onMoodNoteChange = {},
+                    onStartedAtChange = {},
+                    onEndedAtChange = {},
                     onEditEventTextChange = {},
                     onEditMoodSelected = {},
                     onEditMoodNoteChange = {},
+                    onEditStartedAtChange = {},
+                    onEditEndedAtChange = {},
                     onSave = {},
                     onEdit = {},
                     onCancelEdit = {},
@@ -528,4 +753,25 @@ class RoyalNoteAppTest {
 
         assertEquals(serifWidth, renderedWidth, 0.01f)
     }
+
+    private fun localMillis(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+    ): Long = ZonedDateTime.of(year, month, day, hour, minute, 0, 0, ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()
+
+    private fun localMillis(
+        zoneId: ZoneId,
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+    ): Long = ZonedDateTime.of(year, month, day, hour, minute, 0, 0, zoneId)
+        .toInstant()
+        .toEpochMilli()
 }

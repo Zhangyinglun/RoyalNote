@@ -9,6 +9,8 @@ data class NoteRecord(
     val eventText: String,
     val moodTag: String?,
     val moodNote: String?,
+    val startedAt: Long,
+    val endedAt: Long,
     val createdAt: Long,
     val updatedAt: Long,
 )

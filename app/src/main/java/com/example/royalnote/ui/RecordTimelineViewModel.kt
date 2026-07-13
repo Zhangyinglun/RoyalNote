@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.royalnote.data.NoteRecord
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -24,6 +24,8 @@ interface RecordOperations {
         eventText: String,
         moodTag: String?,
         moodNote: String?,
+        startedAt: Long,
+        endedAt: Long,
         nowMillis: Long,
     )
 
@@ -38,12 +40,17 @@ data class RecordTimelineUiState(
     val eventText: String = "",
     val selectedMood: String? = null,
     val moodNote: String = "",
+    val startedAt: Long = 0L,
+    val endedAt: Long = 0L,
     val editEventText: String = "",
     val editSelectedMood: String? = null,
     val editMoodNote: String = "",
+    val editStartedAt: Long? = null,
+    val editEndedAt: Long? = null,
     val editingRecord: NoteRecord? = null,
     val timelineDays: List<TimelineDay> = emptyList(),
     val message: String? = null,
+    val isSaving: Boolean = false,
 ) {
     val isEditing: Boolean = editingRecord != null
 }
@@ -57,14 +64,22 @@ class RecordTimelineViewModel(
     private val repository: RecordOperations,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) : ViewModel() {
-    private val formState = MutableStateFlow(RecordTimelineUiState())
+    private val saveInFlight = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val formState = MutableStateFlow(
+        clock.millis().let { now ->
+            RecordTimelineUiState(startedAt = now, endedAt = now)
+        }
+    )
 
-    val uiState: StateFlow<RecordTimelineUiState> = combine(
-        formState,
-        repository.observeRecords(),
-    ) { state, records ->
-        state.copy(timelineDays = records.toTimelineDays(clock))
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, RecordTimelineUiState())
+    val uiState: StateFlow<RecordTimelineUiState> = formState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            repository.observeRecords().collect { records ->
+                formState.update { it.copy(timelineDays = records.toTimelineDays(clock)) }
+            }
+        }
+    }
 
     fun updateEventText(value: String) {
         formState.update { it.copy(eventText = value, message = null) }
@@ -76,6 +91,16 @@ class RecordTimelineViewModel(
 
     fun updateMoodNote(value: String) {
         formState.update { it.copy(moodNote = value, message = null) }
+    }
+
+    fun updateStartedAt(value: Long) {
+        formState.update { state ->
+            state.copy(startedAt = value, endedAt = maxOf(state.endedAt, value), message = null)
+        }
+    }
+
+    fun updateEndedAt(value: Long) {
+        formState.update { it.copy(endedAt = value, message = null) }
     }
 
     fun updateEditEventText(value: String) {
@@ -90,43 +115,97 @@ class RecordTimelineViewModel(
         formState.update { it.copy(editMoodNote = value, message = null) }
     }
 
+    fun updateEditStartedAt(value: Long) {
+        formState.update { state ->
+            state.copy(
+                editStartedAt = value,
+                editEndedAt = maxOf(state.editEndedAt ?: value, value),
+                message = null,
+            )
+        }
+    }
+
+    fun updateEditEndedAt(value: Long) {
+        formState.update { it.copy(editEndedAt = value, message = null) }
+    }
+
     fun save() {
+        if (saveInFlight.get()) return
+
         val state = formState.value
-        val isEditing = state.editingRecord != null
-        val eventText = (if (isEditing) state.editEventText else state.eventText).trim()
-        val selectedMood = if (isEditing) state.editSelectedMood else state.selectedMood
-        val rawMoodNote = if (isEditing) state.editMoodNote else state.moodNote
+        val editing = state.editingRecord
+        val eventText = (if (editing == null) state.eventText else state.editEventText).trim()
+        val selectedMood = if (editing == null) state.selectedMood else state.editSelectedMood
+        val rawMoodNote = if (editing == null) state.moodNote else state.editMoodNote
 
         if (eventText.isEmpty()) {
             formState.update { it.copy(message = "未记今日之事，不宜入录") }
             return
         }
 
+        val startedAt = if (editing == null) state.startedAt else state.editStartedAt ?: editing.startedAt
+        val endedAt = if (editing == null) state.endedAt else state.editEndedAt ?: editing.endedAt
+        if (endedAt < startedAt) {
+            formState.update { it.copy(message = "结束时间不可早于开始时间") }
+            return
+        }
+        if (!saveInFlight.compareAndSet(false, true)) return
+
+        formState.update { it.copy(isSaving = true) }
+
         viewModelScope.launch {
-            runCatching {
+            try {
                 val moodNote = rawMoodNote.trim().ifEmpty { null }
                 val now = clock.millis()
-                val editing = state.editingRecord
                 if (editing == null) {
-                    repository.addRecord(eventText, selectedMood, moodNote, now)
+                    repository.addRecord(eventText, selectedMood, moodNote, startedAt, endedAt, now)
                 } else {
                     repository.updateRecord(
                         editing.copy(
                             eventText = eventText,
                             moodTag = selectedMood,
                             moodNote = moodNote,
+                            startedAt = startedAt,
+                            endedAt = endedAt,
                             updatedAt = now,
                         )
                     )
                 }
-            }.onSuccess {
-                if (isEditing) {
-                    formState.update { it.copy(editEventText = "", editSelectedMood = null, editMoodNote = "", editingRecord = null) }
+
+                if (editing == null) {
+                    val resetAt = clock.millis()
+                    formState.update { current ->
+                        if (current.matchesNewForm(state)) {
+                            current.copy(
+                                eventText = "",
+                                selectedMood = null,
+                                moodNote = "",
+                                startedAt = resetAt,
+                                endedAt = resetAt,
+                            )
+                        } else current
+                    }
                 } else {
-                    formState.update { it.copy(eventText = "", selectedMood = null, moodNote = "") }
+                    formState.update { current ->
+                        if (current.matchesEditForm(state)) {
+                            current.copy(
+                                editEventText = "",
+                                editSelectedMood = null,
+                                editMoodNote = "",
+                                editStartedAt = null,
+                                editEndedAt = null,
+                                editingRecord = null,
+                            )
+                        } else current
+                    }
                 }
-            }.onFailure {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
                 formState.update { it.copy(message = "入录未成，烦请再试") }
+            } finally {
+                saveInFlight.set(false)
+                formState.update { it.copy(isSaving = false) }
             }
         }
     }
@@ -137,28 +216,47 @@ class RecordTimelineViewModel(
                 editEventText = record.eventText,
                 editSelectedMood = record.moodTag,
                 editMoodNote = record.moodNote.orEmpty(),
+                editStartedAt = record.startedAt,
+                editEndedAt = record.endedAt,
                 editingRecord = record,
             )
         }
     }
 
     fun cancelEditing() {
-        formState.update { it.copy(editEventText = "", editSelectedMood = null, editMoodNote = "", editingRecord = null) }
+        formState.update {
+            it.copy(
+                editEventText = "",
+                editSelectedMood = null,
+                editMoodNote = "",
+                editStartedAt = null,
+                editEndedAt = null,
+                editingRecord = null,
+            )
+        }
     }
 
     fun delete(record: NoteRecord) {
         viewModelScope.launch {
-            runCatching { repository.deleteRecord(record) }
-                .onSuccess {
-                    formState.update { state ->
-                        if (state.editingRecord?.id == record.id) {
-                            state.copy(editEventText = "", editSelectedMood = null, editMoodNote = "", editingRecord = null)
-                        } else state
-                    }
+            try {
+                repository.deleteRecord(record)
+                formState.update { state ->
+                    if (state.editingRecord?.id == record.id) {
+                        state.copy(
+                            editEventText = "",
+                            editSelectedMood = null,
+                            editMoodNote = "",
+                            editStartedAt = null,
+                            editEndedAt = null,
+                            editingRecord = null,
+                        )
+                    } else state
                 }
-                .onFailure {
-                    formState.update { state -> state.copy(message = "抹去未成，烦请再试") }
-                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                formState.update { state -> state.copy(message = "抹去未成，烦请再试") }
+            }
         }
     }
 
@@ -166,6 +264,21 @@ class RecordTimelineViewModel(
         formState.update { it.copy(message = null) }
     }
 }
+
+private fun RecordTimelineUiState.matchesNewForm(submitted: RecordTimelineUiState): Boolean =
+    eventText == submitted.eventText &&
+        selectedMood == submitted.selectedMood &&
+        moodNote == submitted.moodNote &&
+        startedAt == submitted.startedAt &&
+        endedAt == submitted.endedAt
+
+private fun RecordTimelineUiState.matchesEditForm(submitted: RecordTimelineUiState): Boolean =
+    editingRecord == submitted.editingRecord &&
+        editEventText == submitted.editEventText &&
+        editSelectedMood == submitted.editSelectedMood &&
+        editMoodNote == submitted.editMoodNote &&
+        editStartedAt == submitted.editStartedAt &&
+        editEndedAt == submitted.editEndedAt
 
 class RecordTimelineViewModelFactory(
     private val repository: RecordOperations,
@@ -180,7 +293,7 @@ private fun List<NoteRecord>.toTimelineDays(clock: Clock): List<TimelineDay> {
     val today = LocalDate.now(clock)
     val yesterday = today.minusDays(1)
     return groupBy { record ->
-        Instant.ofEpochMilli(record.createdAt).atZone(clock.zone).toLocalDate()
+        Instant.ofEpochMilli(record.startedAt).atZone(clock.zone).toLocalDate()
     }.map { (date, records) ->
         TimelineDay(
             label = when (date) {

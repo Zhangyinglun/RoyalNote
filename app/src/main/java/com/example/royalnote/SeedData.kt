@@ -10,11 +10,14 @@ object SeedData {
 
         val zone = ZoneId.systemDefault()
         val now = java.time.Instant.now().atZone(zone)
+        val nowMillis = now.toInstant().toEpochMilli()
         ops.addRecord(
             eventText = "这里是起居注。录今日之事，存此刻之心。",
             moodTag = null,
             moodNote = null,
-            nowMillis = now.toInstant().toEpochMilli(),
+            startedAt = nowMillis,
+            endedAt = nowMillis,
+            nowMillis = nowMillis,
         )
     }
 }

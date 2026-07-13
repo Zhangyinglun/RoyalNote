@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>起居注 - 墨香色彩预览</title>
+  <style>
+    :root {
+      --paper: #f2ede3;
+      --surface: #eae4d6;
+      --variant: #e2dcc8;
+      --ink: #2a2015;
+      --muted: #63584a;
+      --bronze: #7a5c3e;
+      --border: #d6cdbb;
+      --celadon: #55806a;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px 16px;
+      background: #d8d0c0;
+      color: var(--ink);
+      font-family: Georgia, "Noto Serif CJK SC", "Songti SC", serif;
+    }
+
+    .phone {
+      width: min(100%, 390px);
+      overflow: hidden;
+      border: 1px solid #bdb29f;
+      border-radius: 30px;
+      background: var(--paper);
+      box-shadow: 0 18px 44px rgba(42, 32, 21, 0.2);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 84px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .topbar strong { font-size: 28px; letter-spacing: 0.05em; }
+    .topbar span { color: var(--bronze); font-size: 17px; }
+
+    main { padding: 22px 16px 28px; }
+    .motto { margin: 0; color: var(--muted); font-size: 15px; }
+    .mark { display: flex; gap: 5px; align-items: center; margin: 10px 0 20px; }
+    .mark i { display: block; width: 40px; height: 2px; background: var(--bronze); opacity: 0.7; }
+    .mark b { width: 4px; height: 4px; border-radius: 50%; background: var(--bronze); opacity: 0.5; }
+
+    .card {
+      position: relative;
+      padding: 20px 16px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+    .card::before {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      content: "";
+      background: var(--bronze);
+      opacity: 0.7;
+    }
+    h1 { margin: 0 0 16px; font-size: 22px; }
+    .field {
+      min-height: 76px;
+      padding: 13px 14px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--muted);
+      background: transparent;
+    }
+    .section-title { margin: 18px 0 9px; font-size: 14px; }
+    .time-row { display: grid; grid-template-columns: 42px 1fr 92px; gap: 8px; align-items: center; margin: 8px 0; }
+    .time-row label { color: var(--ink); }
+    .time-button {
+      min-height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      color: var(--muted);
+      background: var(--surface);
+      font: inherit;
+      white-space: nowrap;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      padding: 8px 15px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .save {
+      margin-top: 20px;
+      padding: 10px 25px;
+      border: 0;
+      border-radius: 22px;
+      color: #f9f6ef;
+      background: var(--bronze);
+      font: inherit;
+      font-size: 16px;
+    }
+    .timeline-title { margin: 24px 0 12px 8px; font-size: 20px; }
+    .record { padding: 15px 16px; border-left: 3px solid color-mix(in srgb, var(--bronze) 60%, transparent); }
+    .record time { color: var(--muted); font-size: 13px; }
+    .record p { margin: 10px 0 0; font-size: 17px; line-height: 1.6; }
+    .note { margin: 26px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; text-align: center; }
+  </style>
+</head>
+<body>
+  <section class="phone" aria-label="起居注色彩预览">
+    <header class="topbar"><strong>起居注</strong><span>导入</span></header>
+    <main>
+      <p class="motto">录今日之事，存此刻之心。</p>
+      <div class="mark"><i></i><b></b></div>
+      <section class="card">
+        <h1>速录一则</h1>
+        <div class="field">今日何为</div>
+        <p class="section-title">起止时间</p>
+        <div class="time-row"><label>始于</label><button class="time-button">2026-07-13</button><button class="time-button">12:20</button></div>
+        <div class="time-row"><label>终于</label><button class="time-button">2026-07-13</button><button class="time-button">12:20</button></div>
+        <p class="section-title">心绪</p>
+        <div class="chips"><span class="chip">开心</span><span class="chip">满足</span><span class="chip">平静</span><span class="chip">疲惫</span></div>
+        <button class="save">入录</button>
+      </section>
+      <h2 class="timeline-title">• 今日</h2>
+      <section class="card record"><time>12:20–12:20</time><p>这里是起居注。录今日之事，存此刻之心。</p></section>
+      <p class="note">卡片、对话框和描边统一使用暖米纸色，不保留默认冷紫色阶。</p>
+    </main>
+  </section>
+</body>
+</html>

@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>起居注 · 底部导航与设置审阅稿</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%237A5C3E'/%3E%3Cpath d='M9 8h14v3H9zm0 6h14v2H9zm0 5h9v2H9z' fill='%23F9F6EF'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f2ede3;
+      --surface: #eae4d6;
+      --surface-soft: #f7f3eb;
+      --variant: #e2dcc8;
+      --ink: #2a2015;
+      --ink-2: #63584a;
+      --bronze: #7a5c3e;
+      --bronze-soft: #d9cab8;
+      --celadon: #55806a;
+      --gold: #937a46;
+      --line: #d6cdbb;
+      --shadow: rgba(54, 41, 28, .18);
+      --serif: "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+      --sans: Inter, "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 4%, rgba(122, 92, 62, .13), transparent 28rem),
+        radial-gradient(circle at 88% 96%, rgba(85, 128, 106, .09), transparent 30rem),
+        #d9d0c1;
+      font-family: var(--sans);
+    }
+
+    button, input { font: inherit; }
+
+    .review-shell {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 42px 0 56px;
+    }
+
+    .review-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    .review-title {
+      font: 700 clamp(24px, 3vw, 38px)/1.25 var(--serif);
+      letter-spacing: .06em;
+    }
+
+    .review-subtitle {
+      margin-top: 8px;
+      color: var(--ink-2);
+      font: 400 14px/1.7 var(--serif);
+      letter-spacing: .04em;
+    }
+
+    .review-status {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--celadon);
+      font-size: 13px;
+    }
+
+    .review-status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--celadon);
+      box-shadow: 0 0 0 5px rgba(85, 128, 106, .11);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) 410px minmax(260px, 1fr);
+      gap: 34px;
+      align-items: start;
+    }
+
+    .review-panel {
+      margin-top: 42px;
+      padding: 22px;
+      border: 1px solid rgba(122, 92, 62, .18);
+      border-radius: 16px;
+      background: rgba(249, 246, 239, .72);
+      box-shadow: 0 16px 50px rgba(54, 41, 28, .08);
+      backdrop-filter: blur(16px);
+    }
+
+    .review-panel h2 {
+      font: 600 17px/1.4 var(--serif);
+      letter-spacing: .06em;
+    }
+
+    .brush-mark {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 12px;
+      margin: 8px 0 18px;
+    }
+
+    .brush-mark::before {
+      content: "";
+      width: 38px;
+      height: 2px;
+      background: rgba(122, 92, 62, .7);
+    }
+
+    .brush-mark::after {
+      content: "";
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(122, 92, 62, .5);
+    }
+
+    .check-list {
+      display: grid;
+      gap: 14px;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .check-list li {
+      position: relative;
+      padding-left: 22px;
+      color: var(--ink-2);
+      font: 400 13px/1.65 var(--serif);
+    }
+
+    .check-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--celadon);
+      font-family: var(--sans);
+      font-weight: 700;
+    }
+
+    .token-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .token {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--ink-2);
+      font-size: 11px;
+    }
+
+    .swatch {
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(42, 32, 21, .12);
+      border-radius: 7px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.2);
+    }
+
+    .model-map {
+      display: grid;
+      gap: 12px;
+    }
+
+    .model-map-item {
+      border-bottom: 1px solid rgba(122, 92, 62, .12);
+      padding-bottom: 12px;
+    }
+
+    .model-map-item:last-child { border: 0; padding-bottom: 0; }
+
+    .model-map-item strong {
+      display: block;
+      font: 600 13px/1.45 var(--serif);
+    }
+
+    .model-map-item span {
+      display: block;
+      margin-top: 3px;
+      color: var(--ink-2);
+      font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+      word-break: break-word;
+    }
+
+    .phone-stage { text-align: center; }
+
+    .phone-caption {
+      margin-bottom: 12px;
+      color: rgba(42, 32, 21, .7);
+      font: 600 13px/1.5 var(--serif);
+      letter-spacing: .12em;
+    }
+
+    .phone {
+      width: 390px;
+      height: 844px;
+      position: relative;
+      overflow: hidden;
+      margin: 0 auto;
+      border: 7px solid #eee8dc;
+      border-radius: 42px;
+      background: var(--paper);
+      box-shadow: 0 0 0 2px #bcae9b, 0 30px 90px rgba(54, 41, 28, .28);
+      text-align: left;
+    }
+
+    .phone::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+      opacity: .028;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .status-bar {
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 20px 0;
+      font: 600 12px/1 var(--sans);
+    }
+
+    .status-icons { display: flex; gap: 6px; align-items: center; }
+    .signal { letter-spacing: -2px; transform: translateY(-1px); }
+    .battery { width: 19px; height: 9px; border: 1.5px solid var(--ink); border-radius: 3px; position: relative; }
+    .battery::before { content: ""; position: absolute; inset: 1.5px; background: var(--ink); border-radius: 1px; }
+    .battery::after { content: ""; position: absolute; width: 2px; height: 4px; right: -4px; top: 1px; background: var(--ink); border-radius: 0 1px 1px 0; }
+
+    .app-bar {
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid rgba(214, 205, 187, .6);
+    }
+
+    .app-bar h2 {
+      font: 700 23px/1 var(--serif);
+      letter-spacing: .08em;
+    }
+
+    .text-action {
+      border: 0;
+      padding: 9px 4px;
+      color: var(--bronze);
+      background: transparent;
+      font: 600 14px/1 var(--serif);
+      cursor: pointer;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 100px 0 78px;
+      display: none;
+      overflow: auto;
+      padding: 18px 16px 26px;
+      scrollbar-width: none;
+    }
+
+    .screen::-webkit-scrollbar { display: none; }
+    .screen.active { display: block; animation: screen-in .22s ease-out; }
+
+    @keyframes screen-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .intro {
+      color: var(--ink-2);
+      font: 400 14px/1.7 var(--serif);
+      letter-spacing: .04em;
+    }
+
+    .mini-brush { display: flex; align-items: center; gap: 4px; margin: 7px 0 18px; }
+    .mini-brush span:first-child { width: 40px; height: 2px; background: rgba(122, 92, 62, .7); }
+    .mini-brush span:last-child { width: 3px; height: 3px; border-radius: 50%; background: rgba(122, 92, 62, .5); }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: rgba(122, 92, 62, .7);
+    }
+
+    .quick-card { padding: 18px 16px 16px 19px; }
+    .quick-card h3, .settings-card h3 { font: 600 17px/1.4 var(--serif); letter-spacing: .04em; }
+
+    .preview-field {
+      display: flex;
+      align-items: center;
+      min-height: 72px;
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: #8a7b6d;
+      background: rgba(249, 246, 239, .42);
+      font: 15px/1.5 var(--serif);
+    }
+
+    .field-label { margin-top: 14px; font: 500 13px/1.5 var(--serif); }
+
+    .mood-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .mood {
+      border: 1px solid #c9c0af;
+      border-radius: 18px;
+      padding: 6px 11px;
+      color: var(--ink-2);
+      background: transparent;
+      font: 12px/1 var(--serif);
+    }
+
+    .primary-button {
+      margin-top: 14px;
+      border: 0;
+      border-radius: 22px;
+      padding: 10px 20px;
+      color: #f9f6ef;
+      background: var(--bronze);
+      font: 600 13px/1 var(--serif);
+    }
+
+    .timeline-title { display: flex; align-items: center; gap: 8px; margin: 19px 0 10px; font: 600 16px/1.4 var(--serif); }
+    .timeline-title::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--bronze); }
+
+    .record { margin-left: 18px; padding: 14px 14px 14px 17px; }
+    .record-time { color: var(--ink-2); font: 11px/1.3 var(--serif); }
+    .record-text { margin-top: 7px; font: 15px/1.55 var(--serif); }
+    .record-chip { display: inline-block; margin-top: 10px; padding: 5px 10px; border-radius: 14px; color: white; background: var(--celadon); font: 11px/1 var(--serif); }
+
+    .analysis-space {
+      height: 100%;
+      min-height: 520px;
+    }
+
+    .settings-stack { display: grid; gap: 14px; }
+    .settings-card { padding: 17px 15px 16px 18px; }
+    .settings-help { margin-top: 5px; color: var(--ink-2); font: 11px/1.55 var(--serif); }
+
+    .key-wrap { position: relative; margin-top: 14px; }
+    .key-input {
+      width: 100%;
+      height: 48px;
+      padding: 0 48px 0 12px;
+      border: 1px solid var(--line);
+      outline: none;
+      border-radius: 7px;
+      color: var(--ink);
+      background: rgba(249, 246, 239, .55);
+      font: 13px/1 var(--sans);
+      letter-spacing: .02em;
+      transition: border-color .18s, box-shadow .18s;
+    }
+
+    .key-input:focus { border-color: var(--bronze); box-shadow: 0 0 0 3px rgba(122, 92, 62, .09); }
+    .eye-button {
+      position: absolute;
+      top: 4px;
+      right: 5px;
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 20px;
+      color: var(--ink-2);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .eye-button svg { width: 19px; height: 19px; }
+
+    .saved-row {
+      min-height: 18px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 7px;
+      color: var(--celadon);
+      font: 11px/1.5 var(--serif);
+      opacity: 0;
+      transition: opacity .18s;
+    }
+
+    .saved-row.visible { opacity: 1; }
+
+    .usage-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .usage-label { color: var(--ink-2); font: 500 12px/1.4 var(--serif); }
+    .usage-amount { margin-top: 4px; font: 700 28px/1.2 var(--serif); letter-spacing: .02em; }
+    .usage-meta { margin-top: 7px; color: var(--ink-2); font: 11px/1.5 var(--serif); }
+    .usage-status { margin-top: 2px; min-height: 16px; color: var(--celadon); font: 11px/1.45 var(--serif); }
+    .usage-status.error { color: #8a5340; }
+
+    .refresh-button {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      color: var(--bronze);
+      background: rgba(249, 246, 239, .55);
+      cursor: pointer;
+    }
+
+    .refresh-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .refresh-button.loading svg { animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .model-list { display: grid; gap: 7px; margin-top: 13px; }
+    .model-option {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 10px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      color: var(--ink);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: background .18s, border-color .18s;
+    }
+
+    .model-option:hover { background: rgba(249, 246, 239, .48); }
+    .model-option.selected { border-color: rgba(122, 92, 62, .35); background: rgba(249, 246, 239, .58); }
+    .radio { width: 17px; height: 17px; border: 1.5px solid #9b8d7b; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
+    .selected .radio { border-color: var(--bronze); }
+    .selected .radio::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--bronze); }
+    .model-copy strong { display: block; font: 600 13px/1.4 var(--serif); }
+    .model-copy span { display: block; margin-top: 2px; color: var(--ink-2); font: 10px/1.35 ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+    .effort-label { margin-top: 15px; color: var(--ink-2); font: 500 12px/1.4 var(--serif); }
+    .effort-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+    .effort-button {
+      border: 1px solid #bcae9c;
+      border-radius: 17px;
+      padding: 7px 11px;
+      color: var(--ink-2);
+      background: transparent;
+      font: 600 11px/1 var(--sans);
+      cursor: pointer;
+    }
+
+    .effort-button.selected { border-color: var(--bronze); color: #f9f6ef; background: var(--bronze); }
+    .settings-footnote { padding: 2px 4px 0; color: var(--ink-2); text-align: center; font: 11px/1.6 var(--serif); }
+
+    .bottom-nav {
+      position: absolute;
+      z-index: 10;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 78px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
+      background: rgba(234, 228, 214, .97);
+      box-shadow: 0 -8px 24px rgba(54, 41, 28, .04);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border: 0;
+      color: var(--ink-2);
+      background: transparent;
+      cursor: pointer;
+      font: 500 11px/1 var(--serif);
+    }
+
+    .nav-icon-wrap {
+      min-width: 48px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      transition: background .18s, color .18s;
+    }
+
+    .nav-item svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+    .nav-item.active { color: var(--bronze); font-weight: 700; }
+    .nav-item.active .nav-icon-wrap { background: var(--bronze-soft); }
+
+    .prototype-note {
+      margin-top: 18px;
+      color: rgba(42, 32, 21, .62);
+      font: 12px/1.6 var(--serif);
+    }
+
+    @media (max-width: 980px) {
+      .workspace { grid-template-columns: 1fr; }
+      .phone-stage { order: -1; }
+      .review-panel { width: min(620px, 100%); margin: 0 auto; }
+    }
+
+    @media (max-width: 480px) {
+      .review-shell { width: 100%; padding: 0; }
+      .review-header, .review-panel { display: none; }
+      .workspace { display: block; }
+      .phone-caption, .prototype-note { display: none; }
+      .phone { width: 100%; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="review-shell">
+    <header class="review-header">
+      <div>
+        <h1 class="review-title">起居注 · 导航与统一设置审阅稿</h1>
+        <p class="review-subtitle">点击手机底栏切换页面；在设置页可体验模型与 effort 的联动和分别记忆。</p>
+      </div>
+      <div class="review-status">交互原型 · 墨香浅色主题</div>
+    </header>
+
+    <section class="workspace">
+      <aside class="review-panel">
+        <h2>本轮审阅重点</h2>
+        <div class="brush-mark"></div>
+        <ul class="check-list">
+          <li>主页内容保持原样，底栏不会抢占主要录入操作。</li>
+          <li>分析页仅有标题与留白，不提前引入未定义功能。</li>
+          <li>API Key 默认隐藏，输入后给出轻量自动保存反馈。</li>
+          <li>进入设置页自动查询当前 Key 的本月消费，并可手动刷新。</li>
+          <li>模型切换后只展示该模型允许的 effort。</li>
+          <li>底栏与卡片继续使用青铜、陈纸和墨色体系。</li>
+        </ul>
+        <div class="token-grid" aria-label="色彩样本">
+          <div class="token"><i class="swatch" style="background:#F2EDE3"></i>陈纸</div>
+          <div class="token"><i class="swatch" style="background:#EAE4D6"></i>纸面</div>
+          <div class="token"><i class="swatch" style="background:#7A5C3E"></i>青铜</div>
+          <div class="token"><i class="swatch" style="background:#55806A"></i>青瓷</div>
+        </div>
+      </aside>
+
+      <div class="phone-stage">
+        <p class="phone-caption">390 × 844 · 交互预览</p>
+        <div class="phone" aria-label="起居注手机界面预览">
+          <div class="status-bar">
+            <span>9:41</span>
+            <span class="status-icons"><span class="signal">▂▄▆</span><span>⌁</span><i class="battery"></i></span>
+          </div>
+
+          <header class="app-bar">
+            <h2 id="screenTitle">起居注</h2>
+            <button class="text-action" id="importAction" type="button">导入</button>
+          </header>
+
+          <section class="screen active" data-screen="home">
+            <p class="intro">录今日之事，存此刻之心。</p>
+            <div class="mini-brush"><span></span><span></span></div>
+            <article class="card quick-card">
+              <h3>速录一则</h3>
+              <div class="preview-field">今日何为</div>
+              <p class="field-label">心绪</p>
+              <div class="mood-row">
+                <span class="mood">开心</span><span class="mood">满足</span><span class="mood">平静</span><span class="mood">疲惫</span>
+                <span class="mood">烦躁</span><span class="mood">低落</span><span class="mood">焦虑</span>
+              </div>
+              <button class="primary-button" type="button">入录</button>
+            </article>
+            <h3 class="timeline-title">今天</h3>
+            <article class="card record">
+              <p class="record-time">13:30—14:10</p>
+              <p class="record-text">在窗边整理了今日的手记。</p>
+              <span class="record-chip">平静</span>
+            </article>
+          </section>
+
+          <section class="screen" data-screen="analysis">
+            <div class="analysis-space" aria-label="分析页空白内容区"></div>
+          </section>
+
+          <section class="screen" data-screen="settings">
+            <div class="settings-stack">
+              <article class="card settings-card">
+                <h3>OpenRouter API Key</h3>
+                <p class="settings-help">输入内容会自动保存在本机。</p>
+                <div class="key-wrap">
+                  <input class="key-input" id="apiKey" type="password" value="sk-or-v1-demo-preview" aria-label="OpenRouter API Key">
+                  <button class="eye-button" id="toggleKey" type="button" aria-label="显示 API Key" title="显示或隐藏 API Key">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.8 12s3.4-5 9.2-5 9.2 5 9.2 5-3.4 5-9.2 5-9.2-5-9.2-5Z"></path><circle cx="12" cy="12" r="2.3"></circle></svg>
+                  </button>
+                </div>
+                <div class="saved-row" id="savedStatus">✓ 已自动保存</div>
+              </article>
+
+              <article class="card settings-card" aria-live="polite">
+                <div class="usage-head">
+                  <div>
+                    <p class="usage-label">本月消费</p>
+                    <p class="usage-amount" id="usageAmount">$12.34</p>
+                  </div>
+                  <button class="refresh-button" id="refreshUsage" type="button" aria-label="刷新本月消费" title="刷新本月消费">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"></path><path d="M19 12a7 7 0 1 1-2-4.9L20 10"></path></svg>
+                  </button>
+                </div>
+                <p class="usage-meta">当前 API Key · 按 UTC 月统计</p>
+                <p class="usage-status" id="usageStatus">刚刚更新</p>
+              </article>
+
+              <article class="card settings-card">
+                <h3>分析模型</h3>
+                <div class="model-list" id="modelList"></div>
+                <p class="effort-label">推理强度 · effort</p>
+                <div class="effort-list" id="effortList"></div>
+              </article>
+
+              <p class="settings-footnote">导入旧录将使用此处配置</p>
+            </div>
+          </section>
+
+          <nav class="bottom-nav" aria-label="主要导航">
+            <button class="nav-item active" data-target="home" type="button">
+              <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3.5 10.5 8.5-7 8.5 7"></path><path d="M5.5 9.5v10h13v-10"></path><path d="M9.5 19.5v-6h5v6"></path></svg></span>
+              <span>主页</span>
+            </button>
+            <button class="nav-item" data-target="analysis" type="button">
+              <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11"></path><path d="M12 19V5"></path><path d="M19 19V8"></path><path d="M3 19.5h18"></path></svg></span>
+              <span>分析</span>
+            </button>
+            <button class="nav-item" data-target="settings" type="button">
+              <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.3 13.5a7.7 7.7 0 0 0 0-3l2-1.5-2-3.4-2.5 1a8.3 8.3 0 0 0-2.6-1.5L13.8 2H10l-.4 3.1A8.3 8.3 0 0 0 7 6.6l-2.5-1-2 3.4 2 1.5a7.7 7.7 0 0 0 0 3l-2 1.5 2 3.4 2.5-1a8.3 8.3 0 0 0 2.6 1.5L10 22h3.8l.4-3.1a8.3 8.3 0 0 0 2.6-1.5l2.5 1 2-3.4-2-1.5Z"></path></svg></span>
+              <span>设置</span>
+            </button>
+          </nav>
+        </div>
+        <p class="prototype-note">本页只用于布局和交互审阅，不会连接 OpenRouter 或保存真实密钥。</p>
+      </div>
+
+      <aside class="review-panel">
+        <h2>模型与 effort</h2>
+        <div class="brush-mark"></div>
+        <div class="model-map">
+          <div class="model-map-item"><strong>DeepSeek V4 Pro</strong><span>xhigh · high</span></div>
+          <div class="model-map-item"><strong>GPT Latest</strong><span>max · xhigh · high · medium · low · none</span></div>
+          <div class="model-map-item"><strong>Gemini Pro Latest</strong><span>high · medium · low</span></div>
+        </div>
+        <div class="brush-mark" style="margin-top:20px"></div>
+        <ul class="check-list">
+          <li>三种模型初始 effort 均为 high。</li>
+          <li>本月消费来自当前 Key 的 usage_monthly，不表示账户余额。</li>
+          <li>每种模型独立记忆选择结果。</li>
+          <li>Latest 别名由 OpenRouter 跟随旗舰模型。</li>
+          <li>DeepSeek 使用固定 V4 Pro 模型 ID。</li>
+        </ul>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const models = [
+      { id: "deepseek", name: "DeepSeek V4 Pro", slug: "deepseek/deepseek-v4-pro", efforts: ["xhigh", "high"] },
+      { id: "gpt", name: "GPT Latest", slug: "~openai/gpt-latest", efforts: ["max", "xhigh", "high", "medium", "low", "none"] },
+      { id: "gemini", name: "Gemini Pro Latest", slug: "~google/gemini-pro-latest", efforts: ["high", "medium", "low"] }
+    ];
+
+    const state = {
+      model: "deepseek",
+      efforts: { deepseek: "high", gpt: "high", gemini: "high" }
+    };
+
+    const title = document.querySelector("#screenTitle");
+    const importAction = document.querySelector("#importAction");
+    const screens = [...document.querySelectorAll(".screen")];
+    const navItems = [...document.querySelectorAll(".nav-item")];
+    const modelList = document.querySelector("#modelList");
+    const effortList = document.querySelector("#effortList");
+    const apiKey = document.querySelector("#apiKey");
+    const savedStatus = document.querySelector("#savedStatus");
+    const toggleKey = document.querySelector("#toggleKey");
+    const usageAmount = document.querySelector("#usageAmount");
+    const usageStatus = document.querySelector("#usageStatus");
+    const refreshUsage = document.querySelector("#refreshUsage");
+    let saveTimer;
+    let usageTimer;
+    let hasQueriedUsage = false;
+
+    function switchScreen(target) {
+      screens.forEach(screen => screen.classList.toggle("active", screen.dataset.screen === target));
+      navItems.forEach(item => item.classList.toggle("active", item.dataset.target === target));
+      title.textContent = target === "home" ? "起居注" : target === "analysis" ? "分析" : "设置";
+      importAction.hidden = target !== "home";
+      if (target === "settings" && !hasQueriedUsage) {
+        hasQueriedUsage = true;
+        queryUsage();
+      }
+    }
+
+    navItems.forEach(item => item.addEventListener("click", () => switchScreen(item.dataset.target)));
+
+    function renderModels() {
+      modelList.innerHTML = models.map(model => `
+        <button class="model-option ${state.model === model.id ? "selected" : ""}" data-model="${model.id}" type="button">
+          <span class="radio" aria-hidden="true"></span>
+          <span class="model-copy"><strong>${model.name}</strong><span>${model.slug}</span></span>
+        </button>
+      `).join("");
+      modelList.querySelectorAll(".model-option").forEach(button => button.addEventListener("click", () => {
+        state.model = button.dataset.model;
+        renderModels();
+        renderEfforts();
+      }));
+    }
+
+    function renderEfforts() {
+      const model = models.find(item => item.id === state.model);
+      effortList.innerHTML = model.efforts.map(effort => `
+        <button class="effort-button ${state.efforts[state.model] === effort ? "selected" : ""}" data-effort="${effort}" type="button">${effort}</button>
+      `).join("");
+      effortList.querySelectorAll(".effort-button").forEach(button => button.addEventListener("click", () => {
+        state.efforts[state.model] = button.dataset.effort;
+        renderEfforts();
+      }));
+    }
+
+    apiKey.addEventListener("input", () => {
+      window.clearTimeout(saveTimer);
+      window.clearTimeout(usageTimer);
+      savedStatus.classList.remove("visible");
+      saveTimer = window.setTimeout(() => savedStatus.classList.add("visible"), 260);
+      usageAmount.textContent = "—";
+      usageStatus.textContent = apiKey.value.trim() ? "点击刷新查询新 Key 的用量" : "填写 API Key 后可查询";
+      usageStatus.classList.remove("error");
+      refreshUsage.classList.remove("loading");
+    });
+
+    toggleKey.addEventListener("click", () => {
+      const reveal = apiKey.type === "password";
+      apiKey.type = reveal ? "text" : "password";
+      toggleKey.setAttribute("aria-label", reveal ? "隐藏 API Key" : "显示 API Key");
+    });
+
+    function queryUsage() {
+      window.clearTimeout(usageTimer);
+      if (!apiKey.value.trim()) {
+        usageAmount.textContent = "—";
+        usageStatus.textContent = "填写 API Key 后可查询";
+        return;
+      }
+      refreshUsage.classList.add("loading");
+      usageStatus.classList.remove("error");
+      usageStatus.textContent = "正在查询…";
+      usageTimer = window.setTimeout(() => {
+        usageAmount.textContent = "$12.34";
+        usageStatus.textContent = "刚刚更新";
+        refreshUsage.classList.remove("loading");
+      }, 620);
+    }
+
+    refreshUsage.addEventListener("click", queryUsage);
+
+    renderModels();
+    renderEfforts();
+  </script>
+</body>
+</html>

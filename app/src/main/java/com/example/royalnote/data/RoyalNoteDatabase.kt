@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [NoteRecord::class], version = 1, exportSchema = false)
+@Database(entities = [NoteRecord::class], version = 2, exportSchema = false)
 abstract class RoyalNoteDatabase : RoomDatabase() {
     abstract fun noteRecordDao(): NoteRecordDao
 
@@ -19,7 +19,9 @@ abstract class RoyalNoteDatabase : RoomDatabase() {
                     context.applicationContext,
                     RoyalNoteDatabase::class.java,
                     "royal_note.db",
-                ).build().also { instance = it }
+                ).fallbackToDestructiveMigrationFrom(true, 1)
+                    .build()
+                    .also { instance = it }
             }
         }
     }

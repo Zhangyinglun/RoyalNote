@@ -12,7 +12,8 @@ data class ParsedRecord(
     val eventText: String,
     val moodTag: String? = null,
     val moodNote: String? = null,
-    val timestamp: String,
+    val startedAt: String,
+    val endedAt: String,
 )
 
 @Serializable

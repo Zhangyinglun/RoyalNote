@@ -76,7 +76,9 @@ import com.example.royalnote.ui.RoyalNoteNavigation
 import com.example.royalnote.ui.SettingsScreen
 import com.example.royalnote.ui.SettingsViewModel
 import com.example.royalnote.ui.SettingsViewModelFactory
+import com.example.royalnote.ui.TimeRangeFields
 import com.example.royalnote.ui.TimelineDay
+import com.example.royalnote.ui.formatRecordTimeRange
 import com.example.royalnote.ui.theme.MoodBrick
 import com.example.royalnote.ui.theme.MoodCeladon
 import com.example.royalnote.ui.theme.MoodGray
@@ -85,9 +87,7 @@ import com.example.royalnote.ui.theme.MoodOchre
 import com.example.royalnote.ui.theme.MoodPurple
 import com.example.royalnote.ui.theme.MoodRed
 import com.example.royalnote.ui.theme.RoyalNoteTheme
-import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 private val CardShape = RoundedCornerShape(8.dp)
 
@@ -134,9 +134,13 @@ class MainActivity : ComponentActivity() {
                             onEventTextChange = timelineViewModel::updateEventText,
                             onMoodSelected = timelineViewModel::selectMood,
                             onMoodNoteChange = timelineViewModel::updateMoodNote,
+                            onStartedAtChange = timelineViewModel::updateStartedAt,
+                            onEndedAtChange = timelineViewModel::updateEndedAt,
                             onEditEventTextChange = timelineViewModel::updateEditEventText,
                             onEditMoodSelected = timelineViewModel::selectEditMood,
                             onEditMoodNoteChange = timelineViewModel::updateEditMoodNote,
+                            onEditStartedAtChange = timelineViewModel::updateEditStartedAt,
+                            onEditEndedAtChange = timelineViewModel::updateEditEndedAt,
                             onSave = timelineViewModel::save,
                             onEdit = timelineViewModel::startEditing,
                             onCancelEdit = timelineViewModel::cancelEditing,
@@ -188,9 +192,13 @@ fun RoyalNoteApp(
     onEventTextChange: (String) -> Unit,
     onMoodSelected: (String?) -> Unit,
     onMoodNoteChange: (String) -> Unit,
+    onStartedAtChange: (Long) -> Unit,
+    onEndedAtChange: (Long) -> Unit,
     onEditEventTextChange: (String) -> Unit,
     onEditMoodSelected: (String?) -> Unit,
     onEditMoodNoteChange: (String) -> Unit,
+    onEditStartedAtChange: (Long) -> Unit,
+    onEditEndedAtChange: (Long) -> Unit,
     onSave: () -> Unit,
     onEdit: (NoteRecord) -> Unit,
     onCancelEdit: () -> Unit,
@@ -261,12 +269,17 @@ fun RoyalNoteApp(
                     eventText = uiState.eventText,
                     selectedMood = uiState.selectedMood,
                     moodNote = uiState.moodNote,
+                    startedAt = uiState.startedAt,
+                    endedAt = uiState.endedAt,
                     title = "速录一则",
                     saveLabel = "入录",
+                    saveEnabled = !uiState.isSaving,
                     showCancel = false,
                     onEventTextChange = onEventTextChange,
                     onMoodSelected = onMoodSelected,
                     onMoodNoteChange = onMoodNoteChange,
+                    onStartedAtChange = onStartedAtChange,
+                    onEndedAtChange = onEndedAtChange,
                     onSave = onSave,
                     onCancelEdit = {},
                 )
@@ -282,12 +295,17 @@ fun RoyalNoteApp(
                                 eventText = uiState.editEventText,
                                 selectedMood = uiState.editSelectedMood,
                                 moodNote = uiState.editMoodNote,
+                                startedAt = uiState.editStartedAt ?: record.startedAt,
+                                endedAt = uiState.editEndedAt ?: record.endedAt,
                                 title = "修订此则",
                                 saveLabel = "改毕入录",
+                                saveEnabled = !uiState.isSaving,
                                 showCancel = true,
                                 onEventTextChange = onEditEventTextChange,
                                 onMoodSelected = onEditMoodSelected,
                                 onMoodNoteChange = onEditMoodNoteChange,
+                                onStartedAtChange = onEditStartedAtChange,
+                                onEndedAtChange = onEditEndedAtChange,
                                 onSave = onSave,
                                 onCancelEdit = onCancelEdit,
                             )
@@ -308,12 +326,17 @@ private fun RecordEditor(
     eventText: String,
     selectedMood: String?,
     moodNote: String,
+    startedAt: Long,
+    endedAt: Long,
     title: String,
     saveLabel: String,
+    saveEnabled: Boolean,
     showCancel: Boolean,
     onEventTextChange: (String) -> Unit,
     onMoodSelected: (String?) -> Unit,
     onMoodNoteChange: (String) -> Unit,
+    onStartedAtChange: (Long) -> Unit,
+    onEndedAtChange: (Long) -> Unit,
     onSave: () -> Unit,
     onCancelEdit: () -> Unit,
 ) {
@@ -348,6 +371,12 @@ private fun RecordEditor(
                 label = { Text("今日何为") },
                 minLines = 2,
             )
+            TimeRangeFields(
+                startedAt = startedAt,
+                endedAt = endedAt,
+                onStartedAtChange = onStartedAtChange,
+                onEndedAtChange = onEndedAtChange,
+            )
             Text("心绪", style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 MoodLabels.ALL.forEach { mood ->
@@ -375,7 +404,7 @@ private fun RecordEditor(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onSave) { Text(saveLabel) }
+                Button(onClick = onSave, enabled = saveEnabled) { Text(saveLabel) }
                 if (showCancel) {
                     TextButton(onClick = onCancelEdit) { Text("作罢") }
                 }
@@ -445,7 +474,7 @@ private fun RecordCard(
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                formatTime(record.createdAt),
+                formatRecordTimeRange(record.startedAt, record.endedAt, ZoneId.systemDefault()),
                 style = MaterialTheme.typography.labelMedium,
                 color = onSurfaceVariantColor,
             )
@@ -519,13 +548,6 @@ private fun EmptyTimeline() {
     }
 }
 
-private fun formatTime(millis: Long): String {
-    return Instant.ofEpochMilli(millis)
-        .atZone(ZoneId.systemDefault())
-        .toLocalTime()
-        .format(DateTimeFormatter.ofPattern("HH:mm"))
-}
-
 private fun moodColor(mood: String?): Color? {
     if (mood == null) return null
     return when (mood) {
@@ -543,12 +565,15 @@ private fun moodColor(mood: String?): Color? {
 @Preview(showBackground = true)
 @Composable
 private fun RoyalNotePreview() {
+    val previewTime = System.currentTimeMillis()
     RoyalNoteTheme {
         RoyalNoteApp(
             uiState = RecordTimelineUiState(
                 eventText = "整理书桌",
                 selectedMood = "平静",
                 moodNote = "心里安稳了一点",
+                startedAt = previewTime,
+                endedAt = previewTime,
                 timelineDays = listOf(
                     TimelineDay(
                         label = "今日",
@@ -558,8 +583,10 @@ private fun RoyalNotePreview() {
                                 eventText = "读了半晌书",
                                 moodTag = "满足",
                                 moodNote = null,
-                                createdAt = System.currentTimeMillis(),
-                                updatedAt = System.currentTimeMillis(),
+                                startedAt = previewTime,
+                                endedAt = previewTime,
+                                createdAt = previewTime,
+                                updatedAt = previewTime,
                             )
                         ),
                     )
@@ -568,9 +595,13 @@ private fun RoyalNotePreview() {
             onEventTextChange = {},
             onMoodSelected = {},
             onMoodNoteChange = {},
+            onStartedAtChange = {},
+            onEndedAtChange = {},
             onEditEventTextChange = {},
             onEditMoodSelected = {},
             onEditMoodNoteChange = {},
+            onEditStartedAtChange = {},
+            onEditEndedAtChange = {},
             onSave = {},
             onEdit = {},
             onCancelEdit = {},

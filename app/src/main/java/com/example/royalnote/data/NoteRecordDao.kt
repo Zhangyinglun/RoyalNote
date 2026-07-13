@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface NoteRecordDao {
-    @Query("SELECT * FROM note_records ORDER BY createdAt DESC")
+    @Query("SELECT * FROM note_records ORDER BY startedAt DESC, createdAt DESC")
     fun observeRecords(): Flow<List<NoteRecord>>
 
     @Insert

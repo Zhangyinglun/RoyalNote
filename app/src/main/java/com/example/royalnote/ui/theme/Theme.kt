@@ -19,7 +19,16 @@ private val LightColorScheme = lightColorScheme(
     onSurface = InkPrimary,
     surfaceVariant = AgedPaperVariant,
     onSurfaceVariant = InkSecondary,
+    surfaceTint = Bronze,
+    surfaceDim = AgedPaperVariant,
+    surfaceBright = AgedPaper,
+    surfaceContainerLowest = AgedPaper,
+    surfaceContainerLow = AgedPaperSurface,
+    surfaceContainer = AgedPaperSurface,
+    surfaceContainerHigh = AgedPaperSurface,
+    surfaceContainerHighest = AgedPaperSurface,
     outline = PaperBorder,
+    outlineVariant = PaperBorder,
     error = MoodBrick,
 )
 
@@ -36,7 +45,16 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = RiceText,
     surfaceVariant = DeepInkVariant,
     onSurfaceVariant = RiceTextVariant,
+    surfaceTint = WarmBronze,
+    surfaceDim = DeepInk,
+    surfaceBright = DeepInkSurface,
+    surfaceContainerLowest = DeepInk,
+    surfaceContainerLow = DeepInkSurface,
+    surfaceContainer = DeepInkSurface,
+    surfaceContainerHigh = DeepInkSurface,
+    surfaceContainerHighest = DeepInkVariant,
     outline = DeepInkOutline,
+    outlineVariant = DeepInkOutline,
     error = MutedTerracottaLight,
 )
 
