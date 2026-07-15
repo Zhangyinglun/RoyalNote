@@ -27,6 +27,7 @@ interface RecordOperations {
         startedAt: Long,
         endedAt: Long,
         nowMillis: Long,
+        zoneId: String,
     )
 
     suspend fun updateRecord(record: NoteRecord)
@@ -103,6 +104,11 @@ class RecordTimelineViewModel(
         formState.update { it.copy(endedAt = value, message = null) }
     }
 
+    fun setNewRecordTimeToNow() {
+        val now = clock.millis()
+        formState.update { it.copy(startedAt = now, endedAt = now, message = null) }
+    }
+
     fun updateEditEventText(value: String) {
         formState.update { it.copy(editEventText = value, message = null) }
     }
@@ -158,7 +164,15 @@ class RecordTimelineViewModel(
                 val moodNote = rawMoodNote.trim().ifEmpty { null }
                 val now = clock.millis()
                 if (editing == null) {
-                    repository.addRecord(eventText, selectedMood, moodNote, startedAt, endedAt, now)
+                    repository.addRecord(
+                        eventText,
+                        selectedMood,
+                        moodNote,
+                        startedAt,
+                        endedAt,
+                        now,
+                        clock.zone.id,
+                    )
                 } else {
                     repository.updateRecord(
                         editing.copy(
@@ -293,7 +307,8 @@ private fun List<NoteRecord>.toTimelineDays(clock: Clock): List<TimelineDay> {
     val today = LocalDate.now(clock)
     val yesterday = today.minusDays(1)
     return groupBy { record ->
-        Instant.ofEpochMilli(record.startedAt).atZone(clock.zone).toLocalDate()
+        runCatching { LocalDate.parse(record.eventDate) }
+            .getOrElse { Instant.ofEpochMilli(record.startedAt).atZone(clock.zone).toLocalDate() }
     }.map { (date, records) ->
         TimelineDay(
             label = when (date) {

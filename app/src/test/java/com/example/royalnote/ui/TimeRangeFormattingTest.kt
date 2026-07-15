@@ -89,11 +89,13 @@ class TimeRangeFormattingTest {
     @Test
     fun formatsSameDayAndCrossDayRanges() {
         val start = Instant.parse("2026-07-11T13:30:00Z").toEpochMilli()
+        val sameMinuteEnd = Instant.parse("2026-07-11T13:30:59Z").toEpochMilli()
         val sameDayEnd = Instant.parse("2026-07-11T15:00:00Z").toEpochMilli()
         val crossDayEnd = Instant.parse("2026-07-11T16:15:00Z").toEpochMilli()
 
-        assertEquals("21:30–23:00", formatRecordTimeRange(start, sameDayEnd, zone))
-        assertEquals("07-11 21:30–07-12 00:15", formatRecordTimeRange(start, crossDayEnd, zone))
-        assertEquals("21:30–21:30", formatRecordTimeRange(start, start, zone))
+        assertEquals("21:30\n｜\n23:00", formatRecordTimeRange(start, sameDayEnd, zone))
+        assertEquals("07-11\n21:30\n｜\n07-12\n00:15", formatRecordTimeRange(start, crossDayEnd, zone))
+        assertEquals("21:30", formatRecordTimeRange(start, start, zone))
+        assertEquals("21:30", formatRecordTimeRange(start, sameMinuteEnd, zone))
     }
 }

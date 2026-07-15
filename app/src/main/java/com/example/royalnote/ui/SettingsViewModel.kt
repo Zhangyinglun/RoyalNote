@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.royalnote.network.InvalidOpenRouterApiKeyException
 import com.example.royalnote.network.OpenRouterUsageProvider
 import com.example.royalnote.settings.AnalysisModel
+import com.example.royalnote.settings.AppThemeMode
 import com.example.royalnote.settings.AppSettings
 import com.example.royalnote.settings.ReasoningEffort
 import com.example.royalnote.settings.SettingsRepository
@@ -57,6 +58,8 @@ class SettingsViewModel(
         repository.updateApiKey(value)
         usageState.value = if (value.isBlank()) UsageUiState.MissingKey else UsageUiState.Ready
     }
+
+    fun selectThemeMode(mode: AppThemeMode) = repository.selectThemeMode(mode)
 
     fun selectModel(model: AnalysisModel) = repository.selectModel(model)
 

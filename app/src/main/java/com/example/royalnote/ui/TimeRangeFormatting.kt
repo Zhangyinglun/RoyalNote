@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter
 
 private val editorDateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-private val crossDayFormatter = DateTimeFormatter.ofPattern("MM-dd HH:mm")
+private val shortDateFormatter = DateTimeFormatter.ofPattern("MM-dd")
 
 private fun resolveLocalDateTime(localDateTime: LocalDateTime, zoneId: ZoneId): Long =
     localDateTime
@@ -46,9 +46,11 @@ internal fun formatEditorTime(millis: Long, zoneId: ZoneId): String =
 internal fun formatRecordTimeRange(startedAt: Long, endedAt: Long, zoneId: ZoneId): String {
     val start = Instant.ofEpochMilli(startedAt).atZone(zoneId)
     val end = Instant.ofEpochMilli(endedAt).atZone(zoneId)
+    val startTime = start.format(timeFormatter)
+    val endTime = end.format(timeFormatter)
     return if (start.toLocalDate() == end.toLocalDate()) {
-        "${start.format(timeFormatter)}–${end.format(timeFormatter)}"
+        if (startTime == endTime) startTime else "$startTime\n｜\n$endTime"
     } else {
-        "${start.format(crossDayFormatter)}–${end.format(crossDayFormatter)}"
+        "${start.format(shortDateFormatter)}\n$startTime\n｜\n${end.format(shortDateFormatter)}\n$endTime"
     }
 }

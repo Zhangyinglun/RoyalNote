@@ -18,6 +18,7 @@ object SeedData {
             startedAt = nowMillis,
             endedAt = nowMillis,
             nowMillis = nowMillis,
+            zoneId = zone.id,
         )
     }
 }

@@ -4,6 +4,7 @@ import com.example.royalnote.network.InvalidOpenRouterApiKeyException
 import com.example.royalnote.network.MonthlyUsage
 import com.example.royalnote.network.OpenRouterUsageProvider
 import com.example.royalnote.settings.AnalysisModel
+import com.example.royalnote.settings.AppThemeMode
 import com.example.royalnote.settings.ReasoningEffort
 import com.example.royalnote.settings.SettingsRepository
 import com.example.royalnote.settings.SettingsStorage
@@ -115,13 +116,15 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun modelAndEffortCallbacksDelegateToRepository() = runTest {
+    fun appearanceModelAndEffortCallbacksDelegateToRepository() = runTest {
         val viewModel = SettingsViewModel(repository, usage, clock)
 
+        viewModel.selectThemeMode(AppThemeMode.LIGHT)
         viewModel.selectModel(AnalysisModel.GPT_LATEST)
         viewModel.selectEffort(AnalysisModel.GPT_LATEST, ReasoningEffort.MAX)
         advanceUntilIdle()
 
+        assertEquals(AppThemeMode.LIGHT, repository.settings.value.themeMode)
         assertEquals(AnalysisModel.GPT_LATEST, repository.settings.value.selectedModel)
         assertEquals(ReasoningEffort.MAX, repository.settings.value.effortFor(AnalysisModel.GPT_LATEST))
         assertEquals(repository.settings.value, viewModel.uiState.value.settings)

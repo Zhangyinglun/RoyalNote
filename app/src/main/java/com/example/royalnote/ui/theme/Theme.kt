@@ -29,7 +29,7 @@ private val LightColorScheme = lightColorScheme(
     surfaceContainerHighest = AgedPaperSurface,
     outline = PaperBorder,
     outlineVariant = PaperBorder,
-    error = MoodBrick,
+    error = ErrorBrick,
 )
 
 private val DarkColorScheme = darkColorScheme(

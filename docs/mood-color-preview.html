@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>起居注 · 心绪新色预览</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --positive-green: #3f7659;
+      --positive-teal: #3e7270;
+      --positive-blue: #496e8a;
+      --negative-ochre: #8d6b2c;
+      --negative-orange: #a14f3c;
+      --negative-umber: #875132;
+      --negative-crimson: #8c3f49;
+      font-family: Georgia, "Noto Serif CJK SC", "Songti SC", serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 32px 16px;
+      background: #d8d0c0;
+      color: #2a2015;
+    }
+
+    header {
+      width: min(100%, 900px);
+      margin: 0 auto 20px;
+    }
+
+    h1 { margin: 0 0 8px; font-size: clamp(24px, 4vw, 34px); letter-spacing: .08em; }
+    header p { margin: 0; color: #63584a; line-height: 1.7; }
+
+    .previews {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+      gap: 20px;
+      width: min(100%, 900px);
+      margin: auto;
+    }
+
+    .phone {
+      overflow: hidden;
+      border: 1px solid var(--outline);
+      border-radius: 28px;
+      background: var(--background);
+      color: var(--ink);
+      box-shadow: 0 16px 40px rgb(42 32 21 / 18%);
+    }
+
+    .light {
+      --background: #f2ede3;
+      --surface: #eae4d6;
+      --ink: #2a2015;
+      --muted: #63584a;
+      --outline: #d6cdbb;
+      --bronze: #7a5c3e;
+    }
+
+    .dark {
+      --background: #1a1814;
+      --surface: #262320;
+      --ink: #ede6d6;
+      --muted: #b8ae9a;
+      --outline: #3d3833;
+      --bronze: #c49a6c;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 78px;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--outline);
+    }
+
+    .topbar b { font-size: 25px; letter-spacing: .08em; }
+    .topbar small { color: var(--bronze); font-size: 13px; }
+    main { padding: 22px 16px 26px; }
+
+    .mark {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin: 0 0 18px;
+    }
+
+    .mark::before { width: 40px; height: 2px; background: var(--bronze); content: ""; opacity: .7; }
+    .mark::after { width: 4px; height: 4px; border-radius: 50%; background: var(--bronze); content: ""; opacity: .5; }
+
+    .card {
+      position: relative;
+      padding: 18px 16px;
+      border: 1px solid var(--outline);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    .card::before {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: var(--bronze);
+      content: "";
+      opacity: .7;
+    }
+
+    h2 { margin: 0 0 7px; font-size: 20px; }
+    .hint { margin: 0 0 16px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .group + .group { margin-top: 18px; }
+    .group-label { display: block; margin-bottom: 9px; color: var(--muted); font-size: 13px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .chip {
+      min-height: 40px;
+      padding: 8px 15px;
+      border: 0;
+      border-radius: 8px;
+      color: white;
+      font: inherit;
+      font-size: 14px;
+      letter-spacing: .04em;
+    }
+
+    .happy { background: var(--positive-green); }
+    .content { background: var(--positive-teal); }
+    .calm { background: var(--positive-blue); }
+    .tired { background: var(--negative-ochre); }
+    .irritated { background: var(--negative-orange); }
+    .low { background: var(--negative-umber); }
+    .anxious { background: var(--negative-crimson); }
+
+    .sample {
+      margin-top: 16px;
+      padding-top: 15px;
+      border-top: 1px solid color-mix(in srgb, var(--outline) 65%, transparent);
+    }
+
+    .sample time { color: var(--muted); font-size: 12px; }
+    .sample p { margin: 8px 0 10px; line-height: 1.6; }
+    footer { width: min(100%, 900px); margin: 18px auto 0; color: #63584a; font-size: 12px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>心绪新色</h1>
+    <p>正面心绪归入青、绿、蓝；负面心绪归入赭黄、橙红、深红。整体保持低饱和，避免破坏墨香纸墨气质。</p>
+  </header>
+  <section class="previews" aria-label="浅色与深色心绪色板预览">
+    <article class="phone light">
+      <div class="topbar"><b>起居注</b><small>浅色</small></div>
+      <main>
+        <div class="mark" aria-hidden="true"></div>
+        <section class="card">
+          <h2>心绪</h2>
+          <p class="hint">文字与颜色共同表达，不单独依赖色彩。</p>
+          <div class="group"><span class="group-label">正面 · 冷静色</span><div class="chips"><button class="chip happy">开心</button><button class="chip content">满足</button><button class="chip calm">平静</button></div></div>
+          <div class="group"><span class="group-label">负面 · 暖警示色</span><div class="chips"><button class="chip tired">疲惫</button><button class="chip irritated">烦躁</button><button class="chip low">低落</button><button class="chip anxious">焦虑</button></div></div>
+          <div class="sample"><time>20:10–20:35</time><p>散步回来，心里安稳了一些。</p><span class="chip calm">平静</span></div>
+        </section>
+      </main>
+    </article>
+    <article class="phone dark">
+      <div class="topbar"><b>起居注</b><small>深色</small></div>
+      <main>
+        <div class="mark" aria-hidden="true"></div>
+        <section class="card">
+          <h2>心绪</h2>
+          <p class="hint">同一组语义色在深墨表面仍保持清晰白字。</p>
+          <div class="group"><span class="group-label">正面 · 冷静色</span><div class="chips"><button class="chip happy">开心</button><button class="chip content">满足</button><button class="chip calm">平静</button></div></div>
+          <div class="group"><span class="group-label">负面 · 暖警示色</span><div class="chips"><button class="chip tired">疲惫</button><button class="chip irritated">烦躁</button><button class="chip low">低落</button><button class="chip anxious">焦虑</button></div></div>
+          <div class="sample"><time>22:15–23:00</time><p>事情还没做完，心里有些焦灼。</p><span class="chip anxious">焦虑</span></div>
+        </section>
+      </main>
+    </article>
+  </section>
+  <footer>七种填充色与白字的对比度均达到 WCAG AA 普通文字标准；原有心绪名称与交互保持不变。</footer>
+</body>
+</html>

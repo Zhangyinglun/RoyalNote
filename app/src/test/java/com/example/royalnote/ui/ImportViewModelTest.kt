@@ -1,6 +1,9 @@
 package com.example.royalnote.ui
 
 import com.example.royalnote.data.NoteRecord
+import com.example.royalnote.data.NoteRepository
+import com.example.royalnote.data.RecordSources
+import com.example.royalnote.data.DuplicateImportException
 import com.example.royalnote.network.MissingOpenRouterApiKeyException
 import com.example.royalnote.network.ParsedRecord
 import com.example.royalnote.network.ParsedRecords
@@ -214,6 +217,11 @@ class ImportViewModelTest {
             record.endedAt,
         )
         assertTrue(record.endedAt > record.startedAt)
+        assertEquals("2026-06-20", record.eventDate)
+        assertEquals(clock.zone.id, record.zoneId)
+        assertEquals(RecordSources.IMPORT, record.source)
+        assertEquals(64, record.importBatchId?.length)
+        assertEquals(0, record.importOrdinal)
         assertEquals(clock.millis(), record.createdAt)
         assertEquals(clock.millis(), record.updatedAt)
     }
@@ -309,6 +317,22 @@ class ImportViewModelTest {
     }
 
     @Test
+    fun duplicateImportShowsDedicatedMessage() = runTest {
+        parser.result = ParsedRecords(listOf(
+            ParsedRecord("开会", null, null, "2026-06-20T10:30:00", "2026-06-20T10:30:00"),
+        ))
+        repository.exception = DuplicateImportException("batch")
+        val viewModel = ImportViewModel(parser, repository, clock)
+
+        viewModel.updateText("10:30 开会")
+        viewModel.importRecords()
+        advanceUntilIdle()
+
+        assertEquals("这份记录已经导入过，未重复保存", viewModel.uiState.value.message)
+        assertFalse(viewModel.uiState.value.isSuccess)
+    }
+
+    @Test
     fun parserCancellationDoesNotShowFailureMessage() = runTest {
         parser.exception = CancellationException("cancel parse")
         val viewModel = ImportViewModel(parser, repository, clock)
@@ -355,7 +379,7 @@ class ImportViewModelTest {
     }
 
     @Test
-    fun importTimestampParseFailureFallsBackAllTimesToImportTime() = runTest {
+    fun importTimestampParseFailureUsesTheValidEndpointAsPointEvent() = runTest {
         parser.result = ParsedRecords(listOf(
             ParsedRecord("事件", null, null, "not-a-date", "2026-06-20T10:00:00"),
         ))
@@ -366,14 +390,18 @@ class ImportViewModelTest {
         advanceUntilIdle()
 
         val record = repository.importedRecords.single()
-        assertEquals(clock.millis(), record.startedAt)
-        assertEquals(clock.millis(), record.endedAt)
+        val expected = LocalDateTime.parse("2026-06-20T10:00:00")
+            .atZone(clock.zone)
+            .toInstant()
+            .toEpochMilli()
+        assertEquals(expected, record.startedAt)
+        assertEquals(expected, record.endedAt)
         assertEquals(clock.millis(), record.createdAt)
         assertEquals(clock.millis(), record.updatedAt)
     }
 
     @Test
-    fun importReversedRangeFallsBackAllTimesToImportTime() = runTest {
+    fun importReversedRangeIsRejectedWithoutWriting() = runTest {
         parser.result = ParsedRecords(listOf(
             ParsedRecord("事件", null, null, "2026-06-20T11:00:00", "2026-06-20T10:00:00"),
         ))
@@ -383,11 +411,8 @@ class ImportViewModelTest {
         viewModel.importRecords()
         advanceUntilIdle()
 
-        val record = repository.importedRecords.single()
-        assertEquals(clock.millis(), record.startedAt)
-        assertEquals(clock.millis(), record.endedAt)
-        assertEquals(clock.millis(), record.createdAt)
-        assertEquals(clock.millis(), record.updatedAt)
+        assertTrue(repository.importedRecords.isEmpty())
+        assertEquals("解析未成，稍后再试", viewModel.uiState.value.message)
     }
 
     @Test
@@ -476,6 +501,7 @@ private class FakeImportRepository : RecordOperations {
         startedAt: Long,
         endedAt: Long,
         nowMillis: Long,
+        zoneId: String,
     ) {
         records.value = records.value + NoteRecord(
             id = 0,
@@ -484,6 +510,9 @@ private class FakeImportRepository : RecordOperations {
             moodNote = moodNote,
             startedAt = startedAt,
             endedAt = endedAt,
+            eventDate = NoteRepository.eventDateFor(startedAt, zoneId),
+            zoneId = zoneId,
+            source = RecordSources.MANUAL,
             createdAt = nowMillis,
             updatedAt = nowMillis,
         )

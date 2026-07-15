@@ -5,9 +5,10 @@ import org.junit.Test
 
 class SettingsRepositoryTest {
     @Test
-    fun defaultsUseDeepSeekAndHighForEveryModel() {
+    fun defaultsUseAutomaticThemeDeepSeekAndHighForEveryModel() {
         val repository = SettingsRepository(FakeSettingsStorage())
 
+        assertEquals(AppThemeMode.AUTO, repository.settings.value.themeMode)
         assertEquals(AnalysisModel.DEEPSEEK_V4_PRO, repository.settings.value.selectedModel)
         AnalysisModel.entries.forEach { model ->
             assertEquals(ReasoningEffort.HIGH, repository.settings.value.effortFor(model))
@@ -43,12 +44,14 @@ class SettingsRepositoryTest {
         val repository = SettingsRepository(storage)
 
         repository.updateApiKey(" sk-or-v1-test ")
+        repository.selectThemeMode(AppThemeMode.DARK)
         repository.selectModel(AnalysisModel.GPT_LATEST)
         repository.selectEffort(AnalysisModel.GPT_LATEST, ReasoningEffort.MAX)
         repository.selectEffort(AnalysisModel.DEEPSEEK_V4_PRO, ReasoningEffort.XHIGH)
 
         val reloaded = SettingsRepository(storage)
         assertEquals(" sk-or-v1-test ", reloaded.settings.value.apiKey)
+        assertEquals(AppThemeMode.DARK, reloaded.settings.value.themeMode)
         assertEquals(AnalysisModel.GPT_LATEST, reloaded.settings.value.selectedModel)
         assertEquals(ReasoningEffort.MAX, reloaded.settings.value.effortFor(AnalysisModel.GPT_LATEST))
         assertEquals(ReasoningEffort.XHIGH, reloaded.settings.value.effortFor(AnalysisModel.DEEPSEEK_V4_PRO))
@@ -59,12 +62,14 @@ class SettingsRepositoryTest {
         val storage = FakeSettingsStorage(
             mutableMapOf(
                 "selected_model" to "removed-model",
+                "theme_mode" to "removed-theme",
                 "effort_deepseek-v4-pro" to "low",
                 "effort_gpt-latest" to "removed-effort",
             )
         )
         val repository = SettingsRepository(storage)
 
+        assertEquals(AppThemeMode.AUTO, repository.settings.value.themeMode)
         assertEquals(AnalysisModel.DEEPSEEK_V4_PRO, repository.settings.value.selectedModel)
         assertEquals(ReasoningEffort.HIGH, repository.settings.value.effortFor(AnalysisModel.DEEPSEEK_V4_PRO))
         assertEquals(ReasoningEffort.HIGH, repository.settings.value.effortFor(AnalysisModel.GPT_LATEST))

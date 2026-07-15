@@ -3,8 +3,11 @@ package com.example.royalnote.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.royalnote.data.DuplicateImportException
 import com.example.royalnote.data.MoodLabels
 import com.example.royalnote.data.NoteRecord
+import com.example.royalnote.data.NoteRepository
+import com.example.royalnote.data.RecordSources
 import com.example.royalnote.network.ParsedRecord
 import com.example.royalnote.network.RecordParser
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +16,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -73,7 +77,11 @@ class ImportViewModel(
                 val records = try {
                     val parsed = parser.parseRecords(currentText)
                     val importedAt = clock.millis()
-                    parsed.records.map { it.toNoteRecord(importedAt) }
+                    require(parsed.records.isNotEmpty()) { "解析结果为空" }
+                    val importBatchId = sha256(normalizeInput(currentText))
+                    parsed.records.mapIndexed { index, record ->
+                        record.toNoteRecord(importedAt, importBatchId, index)
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -94,7 +102,10 @@ class ImportViewModel(
                     throw e
                 } catch (e: Exception) {
                     updateState(operationGeneration) {
-                        it.copy(message = "记录已解析，但保存失败，请稍后再试")
+                        it.copy(message = when (e) {
+                            is DuplicateImportException -> "这份记录已经导入过，未重复保存"
+                            else -> "记录已解析，但保存失败，请稍后再试"
+                        })
                     }
                 }
             } finally {
@@ -112,42 +123,68 @@ class ImportViewModel(
         }
     }
 
-    private fun ParsedRecord.toNoteRecord(importedAt: Long): NoteRecord {
-        val range = parseRange(startedAt, endedAt, importedAt)
+    private fun ParsedRecord.toNoteRecord(
+        importedAt: Long,
+        importBatchId: String,
+        importOrdinal: Int,
+    ): NoteRecord {
+        val normalizedEventText = eventText.trim()
+        require(normalizedEventText.isNotEmpty()) { "eventText must not be blank" }
+        val range = parseRange(startedAt, endedAt)
+        val zoneId = clock.zone.id
         return NoteRecord(
-            eventText = eventText,
-            moodTag = moodTag?.takeIf { it in MoodLabels.ALL },
-            moodNote = moodNote?.takeIf { it.isNotBlank() },
+            eventText = normalizedEventText,
+            moodTag = moodTag?.trim()?.takeIf { it in MoodLabels.ALL },
+            moodNote = moodNote?.trim()?.takeIf { it.isNotEmpty() },
             startedAt = range.first,
             endedAt = range.second,
+            eventDate = NoteRepository.eventDateFor(range.first, zoneId),
+            zoneId = zoneId,
+            source = RecordSources.IMPORT,
+            importBatchId = importBatchId,
+            importOrdinal = importOrdinal,
             createdAt = importedAt,
             updatedAt = importedAt,
         )
     }
 
-    private fun parseRange(start: String, end: String, fallback: Long): Pair<Long, Long> {
+    private fun parseRange(start: String, end: String): Pair<Long, Long> {
         val startedAt = parseTimestampOrNull(start)
         val endedAt = parseTimestampOrNull(end)
-        return if (startedAt == null || endedAt == null || endedAt < startedAt) {
-            fallback to fallback
-        } else {
-            startedAt to endedAt
+        return when {
+            startedAt != null && endedAt != null && endedAt >= startedAt -> startedAt to endedAt
+            startedAt != null && endedAt == null -> startedAt to startedAt
+            startedAt == null && endedAt != null -> endedAt to endedAt
+            startedAt != null && endedAt != null -> {
+                throw IllegalArgumentException("导入时间段倒置")
+            }
+            else -> throw IllegalArgumentException("导入时间无法解析")
         }
     }
 
     private fun parseTimestampOrNull(timestamp: String): Long? {
         return runCatching {
-            LocalDateTime.parse(timestamp)
+            LocalDateTime.parse(timestamp.trim())
                 .atZone(clock.zone)
                 .toInstant()
                 .toEpochMilli()
         }.recoverCatching {
-            LocalDate.parse(timestamp)
+            LocalDate.parse(timestamp.trim())
                 .atStartOfDay(clock.zone)
                 .toInstant()
                 .toEpochMilli()
         }.getOrNull()
     }
+
+    private fun normalizeInput(text: String): String = text
+        .replace("\r\n", "\n")
+        .replace('\r', '\n')
+        .trim()
+
+    private fun sha256(text: String): String = MessageDigest
+        .getInstance("SHA-256")
+        .digest(text.toByteArray(Charsets.UTF_8))
+        .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
 }
 
 class ImportViewModelFactory(
