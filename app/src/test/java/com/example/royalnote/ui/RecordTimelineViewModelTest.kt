@@ -1,6 +1,8 @@
 package com.example.royalnote.ui
 
 import com.example.royalnote.data.NoteRecord
+import com.example.royalnote.data.NoteRepository
+import com.example.royalnote.data.RecordSources
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -60,6 +62,23 @@ class RecordTimelineViewModelTest {
 
         assertEquals(later, viewModel.uiState.value.startedAt)
         assertEquals(later, viewModel.uiState.value.endedAt)
+    }
+
+    @Test
+    fun setNewRecordTimeToNowReadsFreshClockValueAndUpdatesBothEnds() {
+        val mutableClock = MutableTestClock(
+            Instant.parse("2026-06-28T10:15:30Z"),
+            ZoneId.of("Asia/Shanghai"),
+        )
+        val viewModel = RecordTimelineViewModel(repository, mutableClock)
+        viewModel.updateStartedAt(1_000L)
+        viewModel.updateEndedAt(2_000L)
+        mutableClock.instantValue = Instant.parse("2026-06-28T12:45:00Z")
+
+        viewModel.setNewRecordTimeToNow()
+
+        assertEquals(mutableClock.millis(), viewModel.uiState.value.startedAt)
+        assertEquals(mutableClock.millis(), viewModel.uiState.value.endedAt)
     }
 
     @Test
@@ -567,6 +586,9 @@ class RecordTimelineViewModelTest {
                 moodNote = null,
                 startedAt = Instant.parse("2026-06-28T01:00:00Z").toEpochMilli(),
                 endedAt = Instant.parse("2026-06-29T01:00:00Z").toEpochMilli(),
+                eventDate = "2026-06-28",
+                zoneId = "Asia/Shanghai",
+                source = RecordSources.MANUAL,
                 createdAt = Instant.parse("2026-06-20T01:00:00Z").toEpochMilli(),
                 updatedAt = 1L,
             ),
@@ -577,6 +599,9 @@ class RecordTimelineViewModelTest {
                 moodNote = null,
                 startedAt = Instant.parse("2026-06-27T01:00:00Z").toEpochMilli(),
                 endedAt = Instant.parse("2026-06-27T01:00:00Z").toEpochMilli(),
+                eventDate = "2026-06-27",
+                zoneId = "Asia/Shanghai",
+                source = RecordSources.MANUAL,
                 createdAt = Instant.parse("2026-06-28T01:00:00Z").toEpochMilli(),
                 updatedAt = 1L,
             ),
@@ -587,6 +612,9 @@ class RecordTimelineViewModelTest {
                 moodNote = null,
                 startedAt = Instant.parse("2026-06-24T01:00:00Z").toEpochMilli(),
                 endedAt = Instant.parse("2026-06-24T01:00:00Z").toEpochMilli(),
+                eventDate = "2026-06-24",
+                zoneId = "Asia/Shanghai",
+                source = RecordSources.MANUAL,
                 createdAt = Instant.parse("2026-06-28T01:00:00Z").toEpochMilli(),
                 updatedAt = 1L,
             ),
@@ -604,11 +632,25 @@ class RecordTimelineViewModelTest {
         eventText = "散步",
         moodTag = "疲惫",
         moodNote = null,
-        startedAt = startedAt,
-        endedAt = endedAt,
-        createdAt = 1_000L,
+            startedAt = startedAt,
+            endedAt = endedAt,
+            eventDate = NoteRepository.eventDateFor(startedAt, "Asia/Shanghai"),
+            zoneId = "Asia/Shanghai",
+            source = RecordSources.MANUAL,
+            createdAt = 1_000L,
         updatedAt = 1_000L,
     )
+}
+
+private class MutableTestClock(
+    var instantValue: Instant,
+    private val zoneId: ZoneId,
+) : Clock() {
+    override fun getZone(): ZoneId = zoneId
+
+    override fun withZone(zone: ZoneId): Clock = MutableTestClock(instantValue, zone)
+
+    override fun instant(): Instant = instantValue
 }
 
 private class FakeRecordRepository : RecordOperations {
@@ -643,6 +685,7 @@ private class FakeRecordRepository : RecordOperations {
         startedAt: Long,
         endedAt: Long,
         nowMillis: Long,
+        zoneId: String,
     ) {
         addCalls++
         beforePersistence()
@@ -653,6 +696,9 @@ private class FakeRecordRepository : RecordOperations {
             moodNote = moodNote,
             startedAt = startedAt,
             endedAt = endedAt,
+            eventDate = NoteRepository.eventDateFor(startedAt, zoneId),
+            zoneId = zoneId,
+            source = RecordSources.MANUAL,
             createdAt = nowMillis,
             updatedAt = nowMillis,
         )

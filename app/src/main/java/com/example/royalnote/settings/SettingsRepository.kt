@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 data class AppSettings(
     val apiKey: String = "",
+    val themeMode: AppThemeMode = AppThemeMode.AUTO,
     val selectedModel: AnalysisModel = AnalysisModel.DEEPSEEK_V4_PRO,
     val efforts: Map<AnalysisModel, ReasoningEffort> = AnalysisModel.entries.associateWith {
         ReasoningEffort.HIGH
@@ -59,6 +60,11 @@ class SettingsRepository(
         _settings.value = _settings.value.copy(apiKey = value)
     }
 
+    fun selectThemeMode(mode: AppThemeMode) {
+        storage.putString(SettingsKeys.THEME_MODE, mode.storageValue)
+        _settings.value = _settings.value.copy(themeMode = mode)
+    }
+
     fun selectModel(model: AnalysisModel) {
         storage.putString(SettingsKeys.SELECTED_MODEL, model.storageValue)
         _settings.value = _settings.value.copy(selectedModel = model)
@@ -92,6 +98,9 @@ class SettingsRepository(
         }
         return AppSettings(
             apiKey = storage.getString(SettingsKeys.API_KEY).orEmpty(),
+            themeMode = AppThemeMode.fromStorageValue(
+                storage.getString(SettingsKeys.THEME_MODE)
+            ) ?: AppThemeMode.AUTO,
             selectedModel = selectedModel,
             efforts = efforts,
         )
@@ -100,6 +109,7 @@ class SettingsRepository(
 
 internal object SettingsKeys {
     const val API_KEY = "api_key"
+    const val THEME_MODE = "theme_mode"
     const val SELECTED_MODEL = "selected_model"
     fun effort(model: AnalysisModel): String = "effort_${model.storageValue}"
 }

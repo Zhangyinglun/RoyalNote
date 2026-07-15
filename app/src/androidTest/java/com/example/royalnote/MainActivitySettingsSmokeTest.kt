@@ -64,12 +64,13 @@ class MainActivitySettingsSmokeTest {
     @Test
     fun activityWiringPersistsObscuredApiKeyAcrossRecreation() {
         composeRule.onNode(hasText("设置") and hasClickAction()).performClick()
+        composeRule.onNodeWithText("API 密钥").performClick()
         val apiKeyField = composeRule.onNode(hasSetTextAction())
         apiKeyField.performTextReplacement("sk-review-smoke")
         apiKeyField.assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Password))
 
         composeRule.activityRule.scenario.recreate()
-        composeRule.onNodeWithText("OpenRouter API Key").assertExists()
+        composeRule.onNodeWithText("API 密钥").assertExists().performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) { usage.calls == 1 }
         assertEquals("sk-review-smoke", usage.keys.single())
         composeRule.onNodeWithText("\$7.89").assertExists()
@@ -95,6 +96,7 @@ class MainActivitySettingsSmokeTest {
     @Test
     fun modelOptionsExposeOneSelectableGroup() {
         composeRule.onNodeWithText("设置").performClick()
+        composeRule.onNodeWithText("DeepSeek V4 Pro").performClick()
 
         composeRule.onNode(
             SemanticsMatcher.keyIsDefined(SemanticsProperties.SelectableGroup) and

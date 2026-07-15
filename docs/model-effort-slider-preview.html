@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>起居注 · 分析模型与推理强度方案</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f2ede3;
+      --paper-deep: #eae4d6;
+      --sheet: #f8f4eb;
+      --ink: #2a2015;
+      --muted: #776d61;
+      --bronze: #7a5c3e;
+      --bronze-soft: #b59a7d;
+      --line: #d6cdbb;
+      --shadow: rgba(39, 28, 18, .22);
+      --safe-bottom: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 28px 16px;
+      background:
+        radial-gradient(circle at 16% 12%, rgba(122, 92, 62, .08), transparent 26%),
+        linear-gradient(140deg, #d8cfbf, #bcb09e);
+      color: var(--ink);
+      font-family: "Songti SC", "Noto Serif SC", "STSong", serif;
+    }
+
+    button, input { font: inherit; }
+
+    .phone {
+      position: relative;
+      width: min(390px, 100%);
+      height: min(844px, calc(100vh - 56px));
+      min-height: 680px;
+      overflow: hidden;
+      border: 1px solid rgba(42, 32, 21, .28);
+      border-radius: 30px;
+      background: var(--paper);
+      box-shadow: 0 28px 70px var(--shadow);
+    }
+
+    .app {
+      height: 100%;
+      overflow: hidden;
+      padding: 54px 20px 92px;
+      background:
+        linear-gradient(rgba(255,255,255,.16), rgba(255,255,255,0)),
+        var(--paper);
+    }
+
+    .title-row { display: flex; align-items: flex-start; justify-content: space-between; }
+    h1 { margin: 0; font-size: 28px; font-weight: 650; letter-spacing: .12em; }
+    .rule { width: 44px; height: 2px; margin-top: 13px; background: var(--bronze); }
+
+    .section-label {
+      margin: 24px 0 9px;
+      color: var(--bronze);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .16em;
+    }
+
+    .setting-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 38px 1fr auto;
+      align-items: center;
+      gap: 11px;
+      min-height: 70px;
+      padding: 10px 4px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--bronze);
+      background: rgba(255,255,255,.2);
+    }
+    .icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.55; }
+    .setting-copy { display: grid; gap: 4px; }
+    .setting-copy strong { font-size: 15px; font-weight: 650; }
+    .setting-copy span { color: var(--muted); font-size: 12px; }
+    .chevron { color: var(--bronze); font-size: 20px; transform: translateY(-1px); }
+
+    .bottom-nav {
+      position: absolute;
+      inset: auto 0 0;
+      z-index: 2;
+      height: 82px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 9px 18px var(--safe-bottom);
+      border-top: 1px solid var(--line);
+      background: rgba(242, 237, 227, .96);
+    }
+    .nav-item { display: grid; place-items: center; align-content: center; gap: 4px; color: var(--muted); font-size: 11px; }
+    .nav-item.active { color: var(--bronze); }
+    .nav-dot { width: 21px; height: 3px; border-radius: 2px; background: currentColor; opacity: .9; }
+
+    .scrim {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      background: rgba(29, 23, 17, .42);
+      backdrop-filter: blur(1.5px);
+    }
+
+    .sheet {
+      position: absolute;
+      z-index: 6;
+      inset: auto 0 0;
+      padding: 11px 20px 28px;
+      border-top: 1px solid rgba(122,92,62,.35);
+      border-radius: 24px 24px 0 0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.35), transparent 24%),
+        var(--sheet);
+      box-shadow: 0 -16px 42px rgba(30, 23, 17, .18);
+    }
+
+    .handle { width: 36px; height: 4px; margin: 0 auto 19px; border-radius: 8px; background: var(--line); }
+    .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+    .sheet h2 { margin: 0; font-size: 21px; font-weight: 650; letter-spacing: .08em; }
+    .done {
+      min-width: 50px;
+      min-height: 38px;
+      border: 0;
+      border-radius: 7px;
+      background: var(--bronze);
+      color: #fffaf1;
+      cursor: pointer;
+    }
+
+    .models { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 20px; }
+    .model {
+      position: relative;
+      min-height: 83px;
+      padding: 12px 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.18);
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color .18s ease, background .18s ease, transform .18s ease;
+    }
+    .model:hover { transform: translateY(-1px); }
+    .model[aria-checked="true"] {
+      border-color: var(--bronze);
+      background: rgba(122, 92, 62, .09);
+      box-shadow: inset 0 0 0 1px rgba(122,92,62,.13);
+    }
+    .model[aria-checked="true"]::before {
+      content: "";
+      position: absolute;
+      left: 9px;
+      top: 10px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--bronze);
+    }
+    .model strong { display: block; margin-top: 10px; font-size: 12px; line-height: 1.25; font-weight: 700; }
+    .model span { display: block; margin-top: 5px; color: var(--muted); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 9px; }
+
+    .effort-panel {
+      margin-top: 17px;
+      padding: 17px 15px 14px;
+      border-left: 3px solid var(--bronze);
+      border-radius: 0 8px 8px 0;
+      background: var(--paper-deep);
+    }
+    .effort-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .effort-head strong { font-size: 14px; }
+    .effort-value { color: var(--bronze); font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 750; }
+    .effort-help { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+
+    .slider-wrap { position: relative; margin-top: 15px; padding: 0 4px; }
+    .rail {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      top: 8px;
+      height: 2px;
+      background: var(--line);
+    }
+    .rail-fill { height: 100%; width: 0; background: var(--bronze); transition: width .16s ease; }
+    .ticks { position: absolute; left: 10px; right: 10px; top: 4px; display: flex; justify-content: space-between; pointer-events: none; }
+    .tick { width: 10px; height: 10px; border: 2px solid var(--paper-deep); border-radius: 50%; background: var(--line); }
+    .tick.on { background: var(--bronze); }
+    input[type="range"] {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 18px;
+      margin: 0;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 19px;
+      height: 19px;
+      border: 5px solid var(--sheet);
+      border-radius: 50%;
+      background: var(--bronze);
+      box-shadow: 0 0 0 1px var(--bronze), 0 2px 5px rgba(42,32,21,.22);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 9px;
+      height: 9px;
+      border: 5px solid var(--sheet);
+      border-radius: 50%;
+      background: var(--bronze);
+      box-shadow: 0 0 0 1px var(--bronze);
+    }
+    .labels { display: flex; justify-content: space-between; gap: 2px; margin-top: 7px; }
+    .labels span {
+      flex: 1 1 0;
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 9px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .labels span:first-child { text-align: left; }
+    .labels span:last-child { text-align: right; }
+    .labels .active { color: var(--bronze); font-weight: 750; }
+
+    .memory-note {
+      display: flex;
+      gap: 7px;
+      align-items: flex-start;
+      margin: 13px 1px 0;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+    .memory-note::before { content: "·"; color: var(--bronze); font-size: 20px; line-height: 9px; }
+
+    .hidden { display: none; }
+
+    @media (max-height: 735px) {
+      .phone { min-height: 650px; }
+      .app { padding-top: 38px; }
+      .sheet { padding-bottom: 20px; }
+      .models { margin-top: 14px; }
+      .model { min-height: 72px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="phone" aria-label="起居注设置界面预览">
+    <section class="app">
+      <div class="title-row"><div><h1>设置</h1><div class="rule"></div></div></div>
+      <p class="section-label">OPENROUTER</p>
+      <button class="setting-row" type="button">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M8 11V8a4 4 0 0 1 8 0v3M6 11h12v9H6z"/></svg></span>
+        <span class="setting-copy"><strong>API 密钥</strong><span>用于导入与七日省察</span></span>
+        <span class="chevron">›</span>
+      </button>
+      <button class="setting-row" type="button">
+        <span class="icon"><svg viewBox="0 0 24 24"><path d="M4 18V9m5 9V5m5 13v-7m5 7V7"/></svg></span>
+        <span class="setting-copy"><strong>本月消费</strong><span>最近一次更新：今日 09:12</span></span>
+        <span class="setting-copy" style="text-align:right"><strong>$0.84</strong></span>
+      </button>
+
+      <p class="section-label">分析模型</p>
+      <button class="setting-row" id="openPicker" type="button">
+        <span class="icon"><svg viewBox="0 0 24 24"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M8.5 9h7m-7 3h7m-7 3h4"/></svg></span>
+        <span class="setting-copy"><strong id="rowModel">GPT Latest</strong><span>推理强度：<b id="rowEffort">high</b></span></span>
+        <span class="chevron">›</span>
+      </button>
+    </section>
+
+    <nav class="bottom-nav" aria-label="主要导航">
+      <span class="nav-item"><span class="nav-dot"></span>主页</span>
+      <span class="nav-item"><span class="nav-dot"></span>省察</span>
+      <span class="nav-item active"><span class="nav-dot"></span>设置</span>
+    </nav>
+
+    <div class="scrim" id="scrim"></div>
+    <section class="sheet" id="sheet" aria-labelledby="sheetTitle">
+      <div class="handle"></div>
+      <div class="sheet-head">
+        <div><h2 id="sheetTitle">分析模型</h2></div>
+        <button class="done" id="done" type="button">完成</button>
+      </div>
+
+      <div class="models" role="radiogroup" aria-label="分析模型">
+        <button class="model" type="button" role="radio" aria-checked="false" data-model="deepseek"><strong>DeepSeek<br>V4 Pro</strong><span>2 档</span></button>
+        <button class="model" type="button" role="radio" aria-checked="true" data-model="gpt"><strong>GPT<br>Latest</strong><span>6 档</span></button>
+        <button class="model" type="button" role="radio" aria-checked="false" data-model="gemini"><strong>Gemini Pro<br>Latest</strong><span>3 档</span></button>
+      </div>
+
+      <div class="effort-panel">
+        <div class="effort-head"><strong>推理强度</strong><span class="effort-value" id="effortValue">high</span></div>
+        <p class="effort-help" id="effortHelp">更充分地分析，速度与消耗也会相应增加。</p>
+        <div class="slider-wrap">
+          <div class="rail"><div class="rail-fill" id="railFill"></div></div>
+          <div class="ticks" id="ticks"></div>
+          <input id="effortSlider" type="range" min="0" max="5" step="1" value="3" aria-label="推理强度">
+          <div class="labels" id="labels"></div>
+        </div>
+      </div>
+      <p class="memory-note">每个模型分别记住上次选择；切换模型时恢复对应档位。</p>
+    </section>
+  </main>
+
+  <script>
+    const models = {
+      deepseek: { name: 'DeepSeek V4 Pro', efforts: ['high', 'xhigh'], selected: 'high' },
+      gpt: { name: 'GPT Latest', efforts: ['none', 'low', 'medium', 'high', 'xhigh', 'max'], selected: 'high' },
+      gemini: { name: 'Gemini Pro Latest', efforts: ['low', 'medium', 'high'], selected: 'high' }
+    };
+    const label = { none: '关闭', low: 'low', medium: 'medium', high: 'high', xhigh: 'xhigh', max: 'max' };
+    const help = {
+      none: '关闭额外推理，适合只需要快速响应的场景。',
+      low: '轻量分析，响应更快、消耗更低。',
+      medium: '在速度、消耗与分析深度之间取得平衡。',
+      high: '更充分地分析，速度与消耗也会相应增加。',
+      xhigh: '用于更复杂的材料，给予模型更多推理空间。',
+      max: '使用模型允许的最高推理强度。'
+    };
+    let current = 'gpt';
+
+    const sheet = document.getElementById('sheet');
+    const scrim = document.getElementById('scrim');
+    const slider = document.getElementById('effortSlider');
+    const labels = document.getElementById('labels');
+    const ticks = document.getElementById('ticks');
+    const railFill = document.getElementById('railFill');
+    const effortValue = document.getElementById('effortValue');
+    const effortHelp = document.getElementById('effortHelp');
+
+    function render() {
+      const model = models[current];
+      const index = model.efforts.indexOf(model.selected);
+      slider.max = model.efforts.length - 1;
+      slider.value = index;
+      effortValue.textContent = model.selected;
+      effortHelp.textContent = help[model.selected];
+      railFill.style.width = `${model.efforts.length === 1 ? 0 : index / (model.efforts.length - 1) * 100}%`;
+      labels.innerHTML = model.efforts.map((item, i) => `<span class="${i === index ? 'active' : ''}">${label[item]}</span>`).join('');
+      ticks.innerHTML = model.efforts.map((_, i) => `<span class="tick ${i <= index ? 'on' : ''}"></span>`).join('');
+      document.querySelectorAll('.model').forEach(button => button.setAttribute('aria-checked', String(button.dataset.model === current)));
+      document.getElementById('rowModel').textContent = model.name;
+      document.getElementById('rowEffort').textContent = model.selected;
+    }
+
+    document.querySelectorAll('.model').forEach(button => button.addEventListener('click', () => {
+      current = button.dataset.model;
+      render();
+    }));
+
+    slider.addEventListener('input', () => {
+      models[current].selected = models[current].efforts[Number(slider.value)];
+      render();
+    });
+
+    function closeSheet() { sheet.classList.add('hidden'); scrim.classList.add('hidden'); }
+    function openSheet() { sheet.classList.remove('hidden'); scrim.classList.remove('hidden'); }
+    document.getElementById('done').addEventListener('click', closeSheet);
+    scrim.addEventListener('click', closeSheet);
+    document.getElementById('openPicker').addEventListener('click', openSheet);
+    render();
+  </script>
+</body>
+</html>

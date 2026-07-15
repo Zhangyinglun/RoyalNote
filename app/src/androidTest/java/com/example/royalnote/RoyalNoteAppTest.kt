@@ -19,11 +19,16 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.testTag as semanticsTestTag
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -31,12 +36,15 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.espresso.Espresso.pressBack
 import com.example.royalnote.data.NoteRecord
 import com.example.royalnote.settings.AnalysisModel
 import com.example.royalnote.settings.AppSettings
+import com.example.royalnote.settings.ReasoningEffort
 import com.example.royalnote.ui.ImportScreen
 import com.example.royalnote.ui.ImportUiState
 import com.example.royalnote.ui.RecordTimelineUiState
@@ -48,9 +56,9 @@ import com.example.royalnote.ui.TimeRangeFields
 import com.example.royalnote.ui.TimelineDay
 import com.example.royalnote.ui.UsageUiState
 import com.example.royalnote.ui.theme.AgedPaperSurface
-import com.example.royalnote.ui.theme.DeepInkSurface
+import com.example.royalnote.ui.theme.DeepInk
 import com.example.royalnote.ui.theme.PaperBorder
-import com.example.royalnote.ui.theme.MoodBrick
+import com.example.royalnote.ui.theme.ErrorBrick
 import com.example.royalnote.ui.theme.RoyalNoteTheme
 import androidx.compose.ui.text.font.FontFamily
 import java.time.ZoneId
@@ -66,6 +74,40 @@ import org.junit.runner.RunWith
 class RoyalNoteAppTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun saveRecordClearsTextFieldFocusToDismissKeyboard() {
+        composeRule.setContent {
+            RoyalNoteTheme {
+                RoyalNoteApp(
+                    uiState = RecordTimelineUiState(),
+                    onEventTextChange = {},
+                    onMoodSelected = {},
+                    onMoodNoteChange = {},
+                    onStartedAtChange = {},
+                    onEndedAtChange = {},
+                    onSetTimeToNow = {},
+                    onEditEventTextChange = {},
+                    onEditMoodSelected = {},
+                    onEditMoodNoteChange = {},
+                    onEditStartedAtChange = {},
+                    onEditEndedAtChange = {},
+                    onSave = {},
+                    onEdit = {},
+                    onCancelEdit = {},
+                    onDelete = {},
+                    onMessageShown = {},
+                    onImportClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("记录此刻，言简意赅……")
+            .performClick()
+            .assertIsFocused()
+        composeRule.onNodeWithText("入录").performClick()
+        composeRule.onNodeWithText("记录此刻，言简意赅……").assertIsNotFocused()
+    }
 
     @Test
     fun lightThemeUsesAgedPaperForMaterialSurfaceContainers() {
@@ -107,7 +149,7 @@ class RoyalNoteAppTest {
         }
 
         composeRule.onNodeWithText("主页").assertIsDisplayed()
-        composeRule.onNodeWithText("分析").performClick()
+        composeRule.onNodeWithText("省察").performClick()
         composeRule.onNodeWithText("分析内容").assertIsDisplayed()
         composeRule.onNodeWithText("设置").performClick()
         composeRule.onNodeWithText("设置内容").assertIsDisplayed()
@@ -115,7 +157,7 @@ class RoyalNoteAppTest {
         composeRule.onNodeWithText("测试导入").performClick()
         composeRule.onNodeWithText("返回主页").assertIsDisplayed()
         composeRule.onNodeWithText("主页").assertDoesNotExist()
-        composeRule.onNodeWithText("分析").assertDoesNotExist()
+        composeRule.onNodeWithText("省察").assertDoesNotExist()
         composeRule.onNodeWithText("设置").assertDoesNotExist()
         composeRule.onNodeWithText("返回主页").performClick()
         composeRule.onNodeWithText("首页内容").assertIsDisplayed()
@@ -139,11 +181,11 @@ class RoyalNoteAppTest {
             }
         }
 
-        val standaloneTop = composeRule.onNodeWithText("分析")
+        val standaloneTop = composeRule.onNodeWithText("七日省察")
             .getUnclippedBoundsInRoot().top.value
         composeRule.runOnUiThread { wrapped.value = true }
-        composeRule.onNodeWithText("分析").performClick()
-        val wrappedTop = composeRule.onAllNodesWithText("分析")[0]
+        composeRule.onNodeWithText("省察").performClick()
+        val wrappedTop = composeRule.onAllNodesWithText("七日省察")[0]
             .getUnclippedBoundsInRoot().top.value
 
         assertEquals(standaloneTop, wrappedTop, 0.5f)
@@ -180,6 +222,7 @@ class RoyalNoteAppTest {
                     onMoodNoteChange = { uiState = uiState.copy(moodNote = it) },
                     onStartedAtChange = { uiState = uiState.copy(startedAt = it) },
                     onEndedAtChange = { uiState = uiState.copy(endedAt = it) },
+                    onSetTimeToNow = {},
                     onEditEventTextChange = { uiState = uiState.copy(editEventText = it) },
                     onEditMoodSelected = { uiState = uiState.copy(editSelectedMood = it) },
                     onEditMoodNoteChange = { uiState = uiState.copy(editMoodNote = it) },
@@ -234,9 +277,16 @@ class RoyalNoteAppTest {
         composeRule.onNodeWithText("读了半小时书").assertIsDisplayed()
         composeRule.onNodeWithText("09:00–10:30").assertIsDisplayed()
 
-        composeRule.onNodeWithText("修订").performClick()
+        val timeline = composeRule.onNodeWithTag("recordTimeline")
+        timeline.performScrollToNode(hasContentDescription("更多记录操作"))
+        composeRule.onNodeWithContentDescription("更多记录操作")
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.onNodeWithText("修订").assertIsDisplayed().performClick()
 
+        timeline.performScrollToNode(hasText("速录一则"))
         composeRule.onNodeWithText("速录一则").assertIsDisplayed()
+        timeline.performScrollToNode(hasText("修订此则"))
         composeRule.onNodeWithText("修订此则").assertIsDisplayed()
         composeRule.onNodeWithText("改毕入录").performScrollTo().assertIsDisplayed()
 
@@ -245,7 +295,7 @@ class RoyalNoteAppTest {
 
         composeRule.onNodeWithText("读了两页书摘").assertIsDisplayed()
         composeRule.onNodeWithText("09:00–10:30").assertIsDisplayed()
-        composeRule.onNodeWithText("修订").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("更多记录操作").assertIsDisplayed()
     }
 
     @Test
@@ -278,6 +328,36 @@ class RoyalNoteAppTest {
         composeRule.onNodeWithTag("endTimeButton")
             .assertContentDescriptionEquals("结束时间，10:30")
             .assertHasClickAction()
+    }
+
+    @Test
+    fun setTimeToNowButtonUsesCompactVisualsAndCallsCallback() {
+        val zone = ZoneId.of("UTC")
+        val startedAt = localMillis(zone, 2026, 7, 11, 9, 0)
+        val endedAt = localMillis(zone, 2026, 7, 11, 10, 30)
+        var clicks = 0
+
+        composeRule.setContent {
+            RoyalNoteTheme {
+                TimeRangeFields(
+                    startedAt = startedAt,
+                    endedAt = endedAt,
+                    onStartedAtChange = {},
+                    onEndedAtChange = {},
+                    onSetToNow = { clicks += 1 },
+                    zoneId = zone,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("起止时间").assertIsDisplayed()
+        composeRule.onNodeWithTag("setTimeToNowButton")
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .performClick()
+
+        assertEquals(1, clicks)
+        composeRule.onNodeWithText("已更新").assertIsDisplayed()
     }
 
     @Test
@@ -407,6 +487,7 @@ class RoyalNoteAppTest {
                     onMoodNoteChange = {},
                     onStartedAtChange = {},
                     onEndedAtChange = {},
+                    onSetTimeToNow = {},
                     onEditEventTextChange = {},
                     onEditMoodSelected = {},
                     onEditMoodNoteChange = {},
@@ -423,7 +504,9 @@ class RoyalNoteAppTest {
         }
 
         composeRule.onNodeWithText("09:00–10:30").assertIsDisplayed()
-        composeRule.onNodeWithText("07-11 23:30–07-12 00:30").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithTag("recordTimeline")
+            .performScrollToNode(hasText("07-11 23:30–07-12 00:30"))
+        composeRule.onNodeWithText("07-11 23:30–07-12 00:30").assertIsDisplayed()
     }
 
     @Test
@@ -439,6 +522,7 @@ class RoyalNoteAppTest {
                     onMoodNoteChange = {},
                     onStartedAtChange = {},
                     onEndedAtChange = {},
+                    onSetTimeToNow = {},
                     onEditEventTextChange = {},
                     onEditMoodSelected = {},
                     onEditMoodNoteChange = {},
@@ -511,12 +595,19 @@ class RoyalNoteAppTest {
             }
         }
 
-        composeRule.onNodeWithText("DeepSeek V4 Pro").assertIsDisplayed()
+        composeRule.onNodeWithText("DeepSeek V4 Pro").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("xhigh").assertIsDisplayed()
         composeRule.onNodeWithText("max").assertDoesNotExist()
         composeRule.onNodeWithText("GPT Latest").performClick()
         composeRule.onNodeWithText("max").assertIsDisplayed()
-        composeRule.onNodeWithText("none").assertIsDisplayed()
+        composeRule.onNodeWithText("关闭").assertIsDisplayed()
+        composeRule.onNodeWithTag("effortSlider")
+            .performSemanticsAction(SemanticsActions.SetProgress) { setProgress ->
+                setProgress(5f)
+            }
+        composeRule.runOnIdle {
+            assertEquals(ReasoningEffort.MAX, state.settings.effortFor(AnalysisModel.GPT_LATEST))
+        }
     }
 
     @Test
@@ -572,6 +663,7 @@ class RoyalNoteAppTest {
             }
         }
 
+        composeRule.onNodeWithText("API 密钥").performClick()
         composeRule.onNodeWithContentDescription("显示 API Key")
             .assertIsDisplayed()
             .performClick()
@@ -586,7 +678,7 @@ class RoyalNoteAppTest {
     @Test
     fun settingsErrorUsesMutedInkFragranceColor() {
         composeRule.setContent {
-            RoyalNoteTheme {
+            RoyalNoteTheme(darkTheme = false) {
                 SettingsScreen(
                     uiState = SettingsUiState(
                         usage = UsageUiState.Error("用量查询失败，请稍后再试"),
@@ -608,14 +700,14 @@ class RoyalNoteAppTest {
         val containsMutedErrorColor = (0 until pixels.height).any { y ->
             (0 until pixels.width).any { x ->
                 val pixel = pixels[x, y]
-                kotlin.math.abs(pixel.red - MoodBrick.red) < 0.02f &&
-                    kotlin.math.abs(pixel.green - MoodBrick.green) < 0.02f &&
-                    kotlin.math.abs(pixel.blue - MoodBrick.blue) < 0.02f &&
+                kotlin.math.abs(pixel.red - ErrorBrick.red) < 0.02f &&
+                    kotlin.math.abs(pixel.green - ErrorBrick.green) < 0.02f &&
+                    kotlin.math.abs(pixel.blue - ErrorBrick.blue) < 0.02f &&
                     pixel.alpha > 0.8f
             }
         }
 
-        assertTrue("Error text should use the muted MoodBrick color", containsMutedErrorColor)
+        assertTrue("Error text should use the muted ErrorBrick color", containsMutedErrorColor)
     }
 
     @Test
@@ -704,10 +796,10 @@ class RoyalNoteAppTest {
         }
 
         assertTrue(
-            "Rendered card background should be the Ink Fragrance surface color",
-            kotlin.math.abs(sampledCardBackground.red - DeepInkSurface.red) < 0.01f &&
-                kotlin.math.abs(sampledCardBackground.green - DeepInkSurface.green) < 0.01f &&
-                kotlin.math.abs(sampledCardBackground.blue - DeepInkSurface.blue) < 0.01f,
+            "Rendered settings background should be the Ink Fragrance background color",
+            kotlin.math.abs(sampledCardBackground.red - DeepInk.red) < 0.01f &&
+                kotlin.math.abs(sampledCardBackground.green - DeepInk.green) < 0.01f &&
+                kotlin.math.abs(sampledCardBackground.blue - DeepInk.blue) < 0.01f,
         )
         assertTrue(
             "Dark-theme error text contrast against sampled card background was " +
@@ -746,6 +838,7 @@ class RoyalNoteAppTest {
             }
         }
 
+        composeRule.onNodeWithText("API 密钥").performClick()
         val renderedWidth = composeRule.onNodeWithText("API Key", useUnmergedTree = true)
             .getUnclippedBoundsInRoot().width.value
         val serifWidth = composeRule.onNodeWithTag("serifApiKeyLabelReference")

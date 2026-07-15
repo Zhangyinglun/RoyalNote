@@ -30,14 +30,27 @@ val RiceText = Color(0xFFEDE6D6)
 val RiceTextVariant = Color(0xFFB8AE9A)
 val DeepInkOutline = Color(0xFF3D3833)
 
-// 心情 chip 七色（古雅降饱和版）
-val MoodRed = Color(0xFFB6624A)       // 开心 - 暖朱
-val MoodOchre = Color(0xFF927530)     // 满足 - 赭金
-val MoodCeladon = Color(0xFF4B7662)   // 平静 - 青瓷
-val MoodGray = Color(0xFF6B7080)      // 疲惫 - 黛灰
-val MoodBrick = Color(0xFF8A5340)     // 烦躁 - 赭褐
-val MoodInkBlue = Color(0xFF425663)   // 低落 - 墨青
-val MoodPurple = Color(0xFF6B4A5A)    // 焦虑 - 紫赭
+// 心绪 chip 七色（古雅降饱和版）：正面取青绿冷色，负面取赭黄与红色。
+val MoodPositiveGreen = Color(0xFF3F7659) // 开心 - 翡翠绿
+val MoodPositiveTeal = Color(0xFF3E7270)  // 满足 - 松石青
+val MoodPositiveBlue = Color(0xFF496E8A)  // 平静 - 静水蓝
+val MoodNegativeOchre = Color(0xFF8D6B2C) // 疲惫 - 赭黄
+val MoodNegativeOrange = Color(0xFFA14F3C) // 烦躁 - 朱橙
+val MoodNegativeUmber = Color(0xFF875132)  // 低落 - 赤褐
+val MoodNegativeCrimson = Color(0xFF8C3F49) // 焦虑 - 胭脂红
+
+fun moodColor(mood: String?): Color? = when (mood) {
+    "开心" -> MoodPositiveGreen
+    "满足" -> MoodPositiveTeal
+    "平静" -> MoodPositiveBlue
+    "疲惫" -> MoodNegativeOchre
+    "烦躁" -> MoodNegativeOrange
+    "低落" -> MoodNegativeUmber
+    "焦虑" -> MoodNegativeCrimson
+    else -> null
+}
+
+val ErrorBrick = Color(0xFF8A5340)
 
 // 深色模式错误提示：在 DeepInkSurface 上保持古雅暖陶色，同时满足正文对比度。
 val MutedTerracottaLight = Color(0xFFD08B76)
